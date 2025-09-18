@@ -5,3 +5,4 @@ Notes.md
 __pycache__
 *.fd
 *.efi
+efi_filesystem/EFI/Boot/config.txt
