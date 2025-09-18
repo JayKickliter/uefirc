@@ -5,7 +5,7 @@ use crate::{
     fs::read_file,
     gui::{ContentView, InputBoxView, TitleView},
     ipv4::IPv4Address,
-    irc::{IrcCommand, IrcCommandName, IrcMessage, ResponseParser},
+    irc::{IrcCommand, IrcMessage, ResponseParser},
     ui::set_resolution,
 };
 #[allow(dead_code)]
@@ -20,7 +20,6 @@ use alloc::{
 use core::{
     cell::RefCell,
     cmp::{max, min},
-    mem::zeroed,
 };
 use libgui::{button::Button, text_view::TextView, ui_elements::UIElement, AwmWindow, KeyCode};
 use log::info;
@@ -34,7 +33,6 @@ use uefi::{
     },
     table::boot::ScopedProtocol,
 };
-use uefi_services::println;
 
 #[derive(Debug, Copy, Clone)]
 struct RenderStructuredMessageAttributes<'a> {
@@ -805,7 +803,7 @@ impl<'a> App<'a> {
 
     fn step(&self) {
         let mut irc_client = self.irc_client.borrow_mut();
-        let mut active_connection = irc_client.active_connection.as_mut();
+        let active_connection = irc_client.active_connection.as_mut();
         let recv_buffer = &active_connection
             .expect("Expected an active connection")
             .recv_buffer;
@@ -924,7 +922,7 @@ pub fn main(_image_handle: Handle, mut system_table: SystemTable<Boot>) -> Statu
     let pointer_resolution = pointer.mode().resolution;
     let pointer_resolution = Point::new(pointer_resolution[0] as _, pointer_resolution[1] as _);
 
-    let mut app = App::new(
+    let app = App::new(
         resolution,
         font_regular,
         font_italic,

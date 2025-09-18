@@ -1,6 +1,5 @@
 use crate::irc::Tokenizer;
 use alloc::{
-    borrow::ToOwned,
     format,
     string::{String, ToString},
     vec,

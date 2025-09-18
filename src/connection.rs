@@ -10,19 +10,15 @@ use alloc::{boxed::Box, rc::Rc, vec, vec::Vec};
 use core::{
     cell::RefCell,
     fmt::{Debug, Formatter},
-    mem::transmute,
     str,
 };
 use log::info;
 use spin::mutex::SpinMutex;
 use uefi::{
     prelude::BootServices,
-    table::boot::{
-        EventType, OpenProtocolAttributes, OpenProtocolParams, ScopedProtocol, TimerTrigger,
-    },
+    table::boot::{EventType, OpenProtocolAttributes, OpenProtocolParams, ScopedProtocol},
     Handle, StatusExt,
 };
-use uefi_services::println;
 
 pub fn get_tcp_service_binding_protocol(
     bs: &BootServices,

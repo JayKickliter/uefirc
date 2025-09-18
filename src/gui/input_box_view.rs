@@ -1,6 +1,5 @@
 use agx_definitions::{
-    Color, Drawable, LikeLayerSlice, NestedLayerSlice, PixelByteLayout, Point, Rect, RectInsets,
-    Size,
+    Drawable, LikeLayerSlice, NestedLayerSlice, PixelByteLayout, Point, Rect, RectInsets, Size,
 };
 use alloc::{
     boxed::Box,

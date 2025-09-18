@@ -1,6 +1,5 @@
 use alloc::{boxed::Box, vec::Vec};
 use core::{ffi::c_void, ptr::NonNull};
-use log::info;
 use uefi::{
     prelude::BootServices,
     table::boot::{EventType, Tpl},
