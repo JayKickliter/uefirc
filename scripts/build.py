@@ -24,7 +24,7 @@ def run_in_qemu():
         # The nightly OVMF builds floating around do not contain this, you need to modify the build system
         # and compile it yourself!
         "-bios",
-        (_REPO_ROOT / "ubuntu_OVMF_with_mouse.fd").as_posix(),
+        (_REPO_ROOT / "OVMF_CODE.fd").as_posix(),
         "-monitor", "stdio",
         "-m", "4G",
         "-vga", "virtio",

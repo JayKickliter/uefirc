@@ -1,12 +1,12 @@
 import os
 import subprocess
 from pathlib import Path
-
+from typing import List, Dict, Union
 
 def run_and_check(
-    cmd_list: list[str],
+    cmd_list: List[str],
     cwd: Path = None,
-    env_additions: dict[str, str] | None = None,
+    env_additions: Union[Dict[str, str], None] = None,
 ) -> None:
     print(" ".join(cmd_list), cwd)
     env = os.environ.copy()
