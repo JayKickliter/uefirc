@@ -1,9 +1,12 @@
-use alloc::borrow::ToOwned;
-use alloc::string::{String, ToString};
-use alloc::{format, vec};
-use alloc::vec::Vec;
-use core::fmt::{Display, Formatter};
 use crate::irc::Tokenizer;
+use alloc::{
+    borrow::ToOwned,
+    format,
+    string::{String, ToString},
+    vec,
+    vec::Vec,
+};
+use core::fmt::{Display, Formatter};
 
 const IRC_LINE_DELIMITER: &'static str = "\r\n";
 
@@ -28,7 +31,6 @@ pub struct User(pub String);
 pub struct Channel(pub String);
 #[derive(Debug, Clone, PartialEq)]
 pub struct UserOrChannel(String);
-
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct JoinParameters {
@@ -243,11 +245,7 @@ pub struct PrivateMessageParameters {
 }
 
 impl PrivateMessageParameters {
-    fn new(
-        sender: &User,
-        recipient: &UserOrChannel,
-        message: &str,
-    ) -> Self {
+    fn new(sender: &User, recipient: &UserOrChannel, message: &str) -> Self {
         Self {
             sender: sender.clone(),
             recipient: recipient.clone(),
@@ -263,14 +261,8 @@ pub struct NamesParameters {
 }
 
 impl NamesParameters {
-    fn new(
-        channel: String,
-        names: Vec<String>,
-    ) -> Self {
-        Self {
-            channel,
-            names,
-        }
+    fn new(channel: String, names: Vec<String>) -> Self {
+        Self { channel, names }
     }
 }
 
@@ -281,14 +273,8 @@ pub struct EndOfNamesParameters {
 }
 
 impl EndOfNamesParameters {
-    fn new(
-        channel: String,
-        message: String,
-    ) -> Self {
-        Self {
-            channel,
-            message,
-        }
+    fn new(channel: String, message: String) -> Self {
+        Self { channel, message }
     }
 }
 
@@ -299,14 +285,8 @@ pub struct TopicParameters {
 }
 
 impl TopicParameters {
-    fn new(
-        channel: String,
-        message: String,
-    ) -> Self {
-        Self {
-            channel,
-            message,
-        }
+    fn new(channel: String, message: String) -> Self {
+        Self { channel, message }
     }
 }
 
@@ -318,11 +298,7 @@ pub struct TopicLastSetParameters {
 }
 
 impl TopicLastSetParameters {
-    fn new(
-        channel: String,
-        user: String,
-        timestamp: String,
-    ) -> Self {
+    fn new(channel: String, user: String, timestamp: String) -> Self {
         Self {
             channel,
             user,
@@ -339,10 +315,7 @@ pub struct ModeParams {
 }
 
 impl ModeParams {
-    fn new(
-        nick: &Nickname,
-        mode: &str,
-    ) -> Self {
+    fn new(nick: &Nickname, mode: &str) -> Self {
         Self {
             nick: nick.clone(),
             mode: mode.to_string(),
@@ -404,8 +377,7 @@ impl NoticeParams {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
-#[derive(PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum IrcCommandName {
     ReplyWelcome,
     ReplyYourHost,
@@ -520,11 +492,7 @@ pub struct IrcMessage {
 }
 
 impl IrcMessage {
-    pub fn new(
-        origin: Option<String>,
-        command_name: IrcCommandName,
-        command: IrcCommand,
-    ) -> Self {
+    pub fn new(origin: Option<String>, command_name: IrcCommandName, command: IrcCommand) -> Self {
         Self {
             origin,
             command_name,
@@ -551,14 +519,20 @@ impl ResponseParser {
     fn read_next_line(&mut self) -> Option<String> {
         // Check whether we've got a line ready to parse
         let irc_newline_seq = IRC_LINE_DELIMITER.as_bytes();
-        let newline_pos = self.buffered_data.windows(2).position(|w| w == irc_newline_seq);
+        let newline_pos = self
+            .buffered_data
+            .windows(2)
+            .position(|w| w == irc_newline_seq);
         let newline_start_idx = match newline_pos {
             // No newline ready yet
             None => return None,
-            Some(p) => p
+            Some(p) => p,
         };
         let end_of_line_idx = newline_start_idx + irc_newline_seq.len();
-        let line = self.buffered_data.drain(..end_of_line_idx).collect::<Vec<u8>>();
+        let line = self
+            .buffered_data
+            .drain(..end_of_line_idx)
+            .collect::<Vec<u8>>();
         Some(String::from_utf8(line).expect("Failed to decode"))
     }
 
@@ -575,7 +549,9 @@ impl ResponseParser {
         if tokenizer.peek() == Some(':') {
             tokenizer.match_str(":");
         }
-        tokenizer.read_to_str(IRC_LINE_DELIMITER).expect("Failed to read a message")
+        tokenizer
+            .read_to_str(IRC_LINE_DELIMITER)
+            .expect("Failed to read a message")
     }
 
     fn parse_usize(tokenizer: &mut Tokenizer) -> usize {
@@ -594,7 +570,11 @@ impl ResponseParser {
         let origin = match tokenizer.peek() == Some(':') {
             true => {
                 tokenizer.match_str(":");
-                Some(tokenizer.read_to(' ').expect("Failed to find space after prefix?"))
+                Some(
+                    tokenizer
+                        .read_to(' ')
+                        .expect("Failed to find space after prefix?"),
+                )
             }
             false => None,
         };
@@ -604,46 +584,42 @@ impl ResponseParser {
 
         let command = match command_name {
             IrcCommandName::ReplyWelcome => {
-                IrcCommand::ReplyWelcome(
-                    ReplyWithNickAndMessageParams::new(
-                        &Self::parse_nickname(&mut tokenizer),
-                        &Self::parse_trailing_message(&mut tokenizer),
-                    ),
-                )
+                IrcCommand::ReplyWelcome(ReplyWithNickAndMessageParams::new(
+                    &Self::parse_nickname(&mut tokenizer),
+                    &Self::parse_trailing_message(&mut tokenizer),
+                ))
             }
             IrcCommandName::ReplyYourHost => {
-                IrcCommand::ReplyYourHost(
-                    ReplyWithNickAndMessageParams::new(
-                        &Self::parse_nickname(&mut tokenizer),
-                        &Self::parse_trailing_message(&mut tokenizer),
-                    ),
-                )
+                IrcCommand::ReplyYourHost(ReplyWithNickAndMessageParams::new(
+                    &Self::parse_nickname(&mut tokenizer),
+                    &Self::parse_trailing_message(&mut tokenizer),
+                ))
             }
             IrcCommandName::ReplyCreated => {
-                IrcCommand::ReplyCreated(
-                    ReplyWithNickAndMessageParams::new(
-                        &Self::parse_nickname(&mut tokenizer),
-                        &Self::parse_trailing_message(&mut tokenizer),
-                    ),
-                )
+                IrcCommand::ReplyCreated(ReplyWithNickAndMessageParams::new(
+                    &Self::parse_nickname(&mut tokenizer),
+                    &Self::parse_trailing_message(&mut tokenizer),
+                ))
             }
             IrcCommandName::ReplyMyInfo => {
                 let nick = Self::parse_nickname(&mut tokenizer);
                 let server = tokenizer.read_to(' ').expect("Failed to read server");
                 let version = tokenizer.read_to(' ').expect("Failed to read version");
-                let available_umodes = tokenizer.read_to(' ').expect("Failed to read available user modes");
-                let available_cmodes = tokenizer.read_to_any(&[" ", IRC_LINE_DELIMITER]).expect("Failed to read available channel modes");
+                let available_umodes = tokenizer
+                    .read_to(' ')
+                    .expect("Failed to read available user modes");
+                let available_cmodes = tokenizer
+                    .read_to_any(&[" ", IRC_LINE_DELIMITER])
+                    .expect("Failed to read available channel modes");
                 let cmodes_with_params = tokenizer.read_to_any(&[" ", IRC_LINE_DELIMITER]);
-                IrcCommand::ReplyMyInfo(
-                    ReplyMyInfoParams::new(
-                        &nick,
-                        &server,
-                        &version,
-                        &available_umodes,
-                        &available_cmodes,
-                        cmodes_with_params.as_ref().map(String::as_str),
-                    )
-                )
+                IrcCommand::ReplyMyInfo(ReplyMyInfoParams::new(
+                    &nick,
+                    &server,
+                    &version,
+                    &available_umodes,
+                    &available_cmodes,
+                    cmodes_with_params.as_ref().map(String::as_str),
+                ))
             }
             IrcCommandName::ReplyISupport => {
                 let nick = Self::parse_nickname(&mut tokenizer);
@@ -664,47 +640,37 @@ impl ResponseParser {
                 IrcCommand::ReplyISupport(ReplyISupportParams::new(&nick, &entries))
             }
             IrcCommandName::ReplyListClientUsers => {
-                IrcCommand::ReplyListClientUsers(
-                    ReplyWithNickAndMessageParams::new(
-                        &Self::parse_nickname(&mut tokenizer),
-                        &Self::parse_trailing_message(&mut tokenizer),
-                    ),
-                )
+                IrcCommand::ReplyListClientUsers(ReplyWithNickAndMessageParams::new(
+                    &Self::parse_nickname(&mut tokenizer),
+                    &Self::parse_trailing_message(&mut tokenizer),
+                ))
             }
             IrcCommandName::ReplyListOperatorUsers => {
-                IrcCommand::ReplyListOperatorUsers(
-                    ReplyListOperatorUsersParams::new(
-                        &Self::parse_nickname(&mut tokenizer),
-                        Self::parse_usize(&mut tokenizer),
-                        &Self::parse_trailing_message(&mut tokenizer),
-                    )
-                )
+                IrcCommand::ReplyListOperatorUsers(ReplyListOperatorUsersParams::new(
+                    &Self::parse_nickname(&mut tokenizer),
+                    Self::parse_usize(&mut tokenizer),
+                    &Self::parse_trailing_message(&mut tokenizer),
+                ))
             }
             IrcCommandName::ReplyListUnknownUsers => {
-                IrcCommand::ReplyListUnknownUsers(
-                    ReplyListUnknownUsersParams::new(
-                        &Self::parse_nickname(&mut tokenizer),
-                        Self::parse_usize(&mut tokenizer),
-                        &Self::parse_trailing_message(&mut tokenizer),
-                    )
-                )
+                IrcCommand::ReplyListUnknownUsers(ReplyListUnknownUsersParams::new(
+                    &Self::parse_nickname(&mut tokenizer),
+                    Self::parse_usize(&mut tokenizer),
+                    &Self::parse_trailing_message(&mut tokenizer),
+                ))
             }
             IrcCommandName::ReplyListChannels => {
-                IrcCommand::ReplyListChannels(
-                    ReplyListChannelsParams::new(
-                        &Self::parse_nickname(&mut tokenizer),
-                        Self::parse_usize(&mut tokenizer),
-                        &Self::parse_trailing_message(&mut tokenizer),
-                    )
-                )
+                IrcCommand::ReplyListChannels(ReplyListChannelsParams::new(
+                    &Self::parse_nickname(&mut tokenizer),
+                    Self::parse_usize(&mut tokenizer),
+                    &Self::parse_trailing_message(&mut tokenizer),
+                ))
             }
             IrcCommandName::ReplyListUserMe => {
-                IrcCommand::ReplyListUserMe(
-                    ReplyWithNickAndMessageParams::new(
-                        &Self::parse_nickname(&mut tokenizer),
-                        &Self::parse_trailing_message(&mut tokenizer),
-                    )
-                )
+                IrcCommand::ReplyListUserMe(ReplyWithNickAndMessageParams::new(
+                    &Self::parse_nickname(&mut tokenizer),
+                    &Self::parse_trailing_message(&mut tokenizer),
+                ))
             }
             IrcCommandName::ReplyLocalUsers => {
                 let nick = Self::parse_nickname(&mut tokenizer);
@@ -713,21 +679,17 @@ impl ResponseParser {
                 // Other servers (like irc.oftc.net) just send the trailing message.
                 let (current_count, max_count) = match tokenizer.peek() {
                     Some(':') => (None, None),
-                    _ => {
-                        (
-                            Some(Self::parse_usize(&mut tokenizer)),
-                            Some(Self::parse_usize(&mut tokenizer)),
-                        )
-                    }
+                    _ => (
+                        Some(Self::parse_usize(&mut tokenizer)),
+                        Some(Self::parse_usize(&mut tokenizer)),
+                    ),
                 };
-                IrcCommand::ReplyLocalUsers(
-                    ReplyLocalUsersParams::new(
-                        &nick,
-                        current_count,
-                        max_count,
-                        &Self::parse_trailing_message(&mut tokenizer),
-                    )
-                )
+                IrcCommand::ReplyLocalUsers(ReplyLocalUsersParams::new(
+                    &nick,
+                    current_count,
+                    max_count,
+                    &Self::parse_trailing_message(&mut tokenizer),
+                ))
             }
             IrcCommandName::ReplyGlobalUsers => {
                 // PT: Some servers (like irc.libera.chat) send the counts
@@ -736,107 +698,83 @@ impl ResponseParser {
                 let nick = Self::parse_nickname(&mut tokenizer);
                 let (current_count, max_count) = match tokenizer.peek() {
                     Some(':') => (None, None),
-                    _ => {
-                        (
-                            Some(Self::parse_usize(&mut tokenizer)),
-                            Some(Self::parse_usize(&mut tokenizer)),
-                        )
-                    }
+                    _ => (
+                        Some(Self::parse_usize(&mut tokenizer)),
+                        Some(Self::parse_usize(&mut tokenizer)),
+                    ),
                 };
-                IrcCommand::ReplyGlobalUsers(
-                    ReplyGlobalUsersParams::new(
-                        &nick,
-                        current_count,
-                        max_count,
-                        &Self::parse_trailing_message(&mut tokenizer),
-                    )
-                )
+                IrcCommand::ReplyGlobalUsers(ReplyGlobalUsersParams::new(
+                    &nick,
+                    current_count,
+                    max_count,
+                    &Self::parse_trailing_message(&mut tokenizer),
+                ))
             }
             IrcCommandName::ReplyConnectionStats => {
-                IrcCommand::ReplyConnectionStats(
-                    ReplyWithNickAndMessageParams::new(
-                        &Self::parse_nickname(&mut tokenizer),
-                        &Self::parse_trailing_message(&mut tokenizer),
-                    )
-                )
+                IrcCommand::ReplyConnectionStats(ReplyWithNickAndMessageParams::new(
+                    &Self::parse_nickname(&mut tokenizer),
+                    &Self::parse_trailing_message(&mut tokenizer),
+                ))
             }
             IrcCommandName::ReplyMessageOfTheDayStart => {
-                IrcCommand::ReplyMessageOfTheDayStart(
-                    ReplyWithNickAndMessageParams::new(
-                        &Self::parse_nickname(&mut tokenizer),
-                        &Self::parse_trailing_message(&mut tokenizer),
-                    )
-                )
+                IrcCommand::ReplyMessageOfTheDayStart(ReplyWithNickAndMessageParams::new(
+                    &Self::parse_nickname(&mut tokenizer),
+                    &Self::parse_trailing_message(&mut tokenizer),
+                ))
             }
             IrcCommandName::ReplyMessageOfTheDayLine => {
-                IrcCommand::ReplyMessageOfTheDayLine(
-                    ReplyWithNickAndMessageParams::new(
-                        &Self::parse_nickname(&mut tokenizer),
-                        &Self::parse_trailing_message(&mut tokenizer),
-                    )
-                )
+                IrcCommand::ReplyMessageOfTheDayLine(ReplyWithNickAndMessageParams::new(
+                    &Self::parse_nickname(&mut tokenizer),
+                    &Self::parse_trailing_message(&mut tokenizer),
+                ))
             }
             IrcCommandName::ReplyMessageOfTheDayEnd => {
-                IrcCommand::ReplyMessageOfTheDayEnd(
-                    ReplyWithNickAndMessageParams::new(
-                        &Self::parse_nickname(&mut tokenizer),
-                        &Self::parse_trailing_message(&mut tokenizer),
-                    )
-                )
+                IrcCommand::ReplyMessageOfTheDayEnd(ReplyWithNickAndMessageParams::new(
+                    &Self::parse_nickname(&mut tokenizer),
+                    &Self::parse_trailing_message(&mut tokenizer),
+                ))
             }
             IrcCommandName::ErrorNoSuchNick => {
-                IrcCommand::ErrorNoSuchNick(
-                    DescriptorAndReasonParams::new(
-                        &tokenizer.read_to_str(" :").expect("Failed to read descriptor"),
-                        &tokenizer.read_to_str(IRC_LINE_DELIMITER).expect("Failed to read a message"),
-                    )
-                )
+                IrcCommand::ErrorNoSuchNick(DescriptorAndReasonParams::new(
+                    &tokenizer
+                        .read_to_str(" :")
+                        .expect("Failed to read descriptor"),
+                    &tokenizer
+                        .read_to_str(IRC_LINE_DELIMITER)
+                        .expect("Failed to read a message"),
+                ))
             }
             IrcCommandName::ErrorUnknownCommand => {
-                IrcCommand::ErrorUnknownCommand(
-                    ErrorUnknownCommandParams::new(
-                        Self::parse_nickname(&mut tokenizer),
-                        &Self::parse_word(&mut tokenizer),
-                        &Self::parse_trailing_message(&mut tokenizer),
-                    )
-                )
+                IrcCommand::ErrorUnknownCommand(ErrorUnknownCommandParams::new(
+                    Self::parse_nickname(&mut tokenizer),
+                    &Self::parse_word(&mut tokenizer),
+                    &Self::parse_trailing_message(&mut tokenizer),
+                ))
             }
-            IrcCommandName::Mode => {
-                IrcCommand::Mode(
-                    ModeParams::new(
-                        &Self::parse_nickname(&mut tokenizer),
-                        &Self::parse_trailing_message(&mut tokenizer),
-                    )
-                )
-            }
-            IrcCommandName::Ping => {
-                IrcCommand::Ping(
-                    PingParams::new(&Self::parse_trailing_message(&mut tokenizer)),
-                )
-            }
-            IrcCommandName::Quit => {
-                IrcCommand::Quit(
-                    QuitParams::new(&Self::parse_trailing_message(&mut tokenizer)),
-                )
-            }
-            IrcCommandName::Error => {
-                IrcCommand::Error(
-                    ErrorParams::new(&Self::parse_trailing_message(&mut tokenizer)),
-                )
-            }
-            IrcCommandName::Notice => {
-                IrcCommand::Notice(
-                    NoticeParams::new(
-                        &tokenizer.read_to(' ').expect("Failed to read target"),
-                        &Self::parse_trailing_message(&mut tokenizer),
-                    ),
-                )
-            },
+            IrcCommandName::Mode => IrcCommand::Mode(ModeParams::new(
+                &Self::parse_nickname(&mut tokenizer),
+                &Self::parse_trailing_message(&mut tokenizer),
+            )),
+            IrcCommandName::Ping => IrcCommand::Ping(PingParams::new(
+                &Self::parse_trailing_message(&mut tokenizer),
+            )),
+            IrcCommandName::Quit => IrcCommand::Quit(QuitParams::new(
+                &Self::parse_trailing_message(&mut tokenizer),
+            )),
+            IrcCommandName::Error => IrcCommand::Error(ErrorParams::new(
+                &Self::parse_trailing_message(&mut tokenizer),
+            )),
+            IrcCommandName::Notice => IrcCommand::Notice(NoticeParams::new(
+                &tokenizer.read_to(' ').expect("Failed to read target"),
+                &Self::parse_trailing_message(&mut tokenizer),
+            )),
             IrcCommandName::Join => {
                 let channel = Self::parse_trailing_message(&mut tokenizer);
                 if channel.contains(" ") {
                     // Only clients can specify multiple channels
-                    panic!("Multiple channels mentioned, servers should not send multiple channels?")
+                    panic!(
+                        "Multiple channels mentioned, servers should not send multiple channels?"
+                    )
                 }
                 IrcCommand::Join(JoinParameters::new(&Channel(channel)))
             }
@@ -846,85 +784,80 @@ impl ResponseParser {
                     origin[..origin.find('!').unwrap()].to_string()
                 };
                 let dest = UserOrChannel(tokenizer.read_to(' ').expect("Failed to read recipient"));
-                let message = tokenizer.read_to_str(IRC_LINE_DELIMITER).expect("Failed to read message");
-                IrcCommand::PrivateMessage(
-                    PrivateMessageParameters::new(
-                        &User(source),
-                        &dest,
-                        &message,
-                    )
-                )
-            },
+                let message = tokenizer
+                    .read_to_str(IRC_LINE_DELIMITER)
+                    .expect("Failed to read message");
+                IrcCommand::PrivateMessage(PrivateMessageParameters::new(
+                    &User(source),
+                    &dest,
+                    &message,
+                ))
+            }
             IrcCommandName::Names => {
                 let _me = Self::parse_nickname(&mut tokenizer);
                 let _channel_type = tokenizer.read_to(' ').expect("Failed to read channel type");
                 let channel_name = tokenizer.read_to(' ').expect("Failed to read channel name");
-                let names_str = tokenizer.read_to_str(IRC_LINE_DELIMITER).expect("Failed to read message");
-                let names = names_str.split(" ").collect::<Vec<&str>>().iter().map(|s| s.to_string()).collect::<Vec<String>>();
-                IrcCommand::Names(
-                    NamesParameters::new(
-                        channel_name,
-                        names,
-                    )
-                )
-            },
+                let names_str = tokenizer
+                    .read_to_str(IRC_LINE_DELIMITER)
+                    .expect("Failed to read message");
+                let names = names_str
+                    .split(" ")
+                    .collect::<Vec<&str>>()
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect::<Vec<String>>();
+                IrcCommand::Names(NamesParameters::new(channel_name, names))
+            }
             IrcCommandName::EndOfNames => {
                 let _me = Self::parse_nickname(&mut tokenizer);
                 let channel_name = tokenizer.read_to(' ').expect("Failed to read channel name");
                 let message = Self::parse_trailing_message(&mut tokenizer);
-                IrcCommand::EndOfNames(
-                    EndOfNamesParameters::new(
-                        channel_name,
-                        message,
-                    )
-                )
+                IrcCommand::EndOfNames(EndOfNamesParameters::new(channel_name, message))
             }
             IrcCommandName::Topic => {
                 let _me = Self::parse_nickname(&mut tokenizer);
                 let channel_name = tokenizer.read_to(' ').expect("Failed to read channel name");
                 let message = Self::parse_trailing_message(&mut tokenizer);
-                IrcCommand::Topic(
-                    TopicParameters::new(
-                        channel_name,
-                        message,
-                    )
-                )
+                IrcCommand::Topic(TopicParameters::new(channel_name, message))
             }
             IrcCommandName::TopicLastSet => {
                 let _me = Self::parse_nickname(&mut tokenizer);
                 let channel_name = tokenizer.read_to(' ').expect("Failed to read channel name");
                 let last_set_by = {
-                    let last_set_by_raw = tokenizer.read_to(' ').expect("Failed to read last set by");
+                    let last_set_by_raw =
+                        tokenizer.read_to(' ').expect("Failed to read last set by");
                     last_set_by_raw[..last_set_by_raw.find('!').unwrap()].to_string()
                 };
-                let timestamp = tokenizer.read_to_str(IRC_LINE_DELIMITER).expect("Failed to read timestamp");
-                IrcCommand::TopicLastSet(
-                    TopicLastSetParameters::new(
-                        channel_name,
-                        last_set_by,
-                        timestamp,
-                    )
-                )
+                let timestamp = tokenizer
+                    .read_to_str(IRC_LINE_DELIMITER)
+                    .expect("Failed to read timestamp");
+                IrcCommand::TopicLastSet(TopicLastSetParameters::new(
+                    channel_name,
+                    last_set_by,
+                    timestamp,
+                ))
             }
             _ => IrcCommand::Unparseable(line),
         };
 
-        Some(
-            IrcMessage::new(
-                origin,
-                command_name,
-                command,
-            )
-        )
+        Some(IrcMessage::new(origin, command_name, command))
     }
 }
 
 #[cfg(test)]
 mod test {
-    use alloc::string::ToString;
-    use alloc::vec;
-    use crate::irc::{ReplyGlobalUsersParams, ReplyListChannelsParams, ReplyWithNickAndMessageParams, ReplyListOperatorUsersParams, ReplyListUnknownUsersParams, ReplyLocalUsersParams, ResponseParser, ModeParams, PingParams, QuitParams, ErrorParams, DescriptorAndReasonParams, ErrorUnknownCommandParams, PrivateMessageParameters, NamesParameters, EndOfNamesParameters, TopicParameters, TopicLastSetParameters};
-    use crate::irc::response_parser::{Channel, IrcCommand, IrcCommandName, IrcMessage, JoinParameters, Nickname, ReplyISupportParams, ReplyMyInfoParams, User, UserOrChannel};
+    use crate::irc::{
+        response_parser::{
+            Channel, IrcCommand, IrcCommandName, IrcMessage, JoinParameters, Nickname,
+            ReplyISupportParams, ReplyMyInfoParams, User, UserOrChannel,
+        },
+        DescriptorAndReasonParams, EndOfNamesParameters, ErrorParams, ErrorUnknownCommandParams,
+        ModeParams, NamesParameters, PingParams, PrivateMessageParameters, QuitParams,
+        ReplyGlobalUsersParams, ReplyListChannelsParams, ReplyListOperatorUsersParams,
+        ReplyListUnknownUsersParams, ReplyLocalUsersParams, ReplyWithNickAndMessageParams,
+        ResponseParser, TopicLastSetParameters, TopicParameters,
+    };
+    use alloc::{string::ToString, vec};
 
     fn parse_line(line: &str) -> IrcMessage {
         let mut p = ResponseParser::new();
@@ -941,44 +874,50 @@ mod test {
         let msg1 = p.parse_next_line().unwrap();
         assert_eq!(msg1.origin, None);
         assert_eq!(msg1.command_name, IrcCommandName::Join);
-        assert_eq!(msg1.command, IrcCommand::Join(JoinParameters::new(&Channel("#chan1".to_string()))));
+        assert_eq!(
+            msg1.command,
+            IrcCommand::Join(JoinParameters::new(&Channel("#chan1".to_string())))
+        );
         let msg2 = p.parse_next_line().unwrap();
         assert_eq!(msg2.origin, None);
         assert_eq!(msg2.command_name, IrcCommandName::Join);
-        assert_eq!(msg2.command, IrcCommand::Join(JoinParameters::new(&Channel("#chan2".to_string()))));
+        assert_eq!(
+            msg2.command,
+            IrcCommand::Join(JoinParameters::new(&Channel("#chan2".to_string())))
+        );
 
         assert!(p.parse_next_line().is_none());
     }
 
     #[test]
     fn test_parse_welcome() {
-        let msg = parse_line(":irc.example.com 001 phill :Welcome to the IRC Network, phill!s@localhost\r\n");
+        let msg = parse_line(
+            ":irc.example.com 001 phill :Welcome to the IRC Network, phill!s@localhost\r\n",
+        );
         assert_eq!(msg.origin, Some("irc.example.com".to_string()));
         assert_eq!(msg.command_name, IrcCommandName::ReplyWelcome);
         assert_eq!(
             msg.command,
-            IrcCommand::ReplyWelcome(
-                ReplyWithNickAndMessageParams::new(
-                    &Nickname("phill".to_string()),
-                    "Welcome to the IRC Network, phill!s@localhost",
-                )
-            )
+            IrcCommand::ReplyWelcome(ReplyWithNickAndMessageParams::new(
+                &Nickname("phill".to_string()),
+                "Welcome to the IRC Network, phill!s@localhost",
+            ))
         );
     }
 
     #[test]
     fn test_parse_your_host() {
-        let msg = parse_line(":irc.example.com 002 phill :Your host is irc.example.com, running version fake\r\n");
+        let msg = parse_line(
+            ":irc.example.com 002 phill :Your host is irc.example.com, running version fake\r\n",
+        );
         assert_eq!(msg.origin, Some("irc.example.com".to_string()));
         assert_eq!(msg.command_name, IrcCommandName::ReplyYourHost);
         assert_eq!(
             msg.command,
-            IrcCommand::ReplyYourHost(
-                ReplyWithNickAndMessageParams::new(
-                    &Nickname("phill".to_string()),
-                    "Your host is irc.example.com, running version fake",
-                )
-            )
+            IrcCommand::ReplyYourHost(ReplyWithNickAndMessageParams::new(
+                &Nickname("phill".to_string()),
+                "Your host is irc.example.com, running version fake",
+            ))
         );
     }
 
@@ -989,12 +928,10 @@ mod test {
         assert_eq!(msg.command_name, IrcCommandName::ReplyCreated);
         assert_eq!(
             msg.command,
-            IrcCommand::ReplyCreated(
-                ReplyWithNickAndMessageParams::new(
-                    &Nickname("phill".to_string()),
-                    "This server was created on caffeine",
-                )
-            )
+            IrcCommand::ReplyCreated(ReplyWithNickAndMessageParams::new(
+                &Nickname("phill".to_string()),
+                "This server was created on caffeine",
+            ))
         );
     }
 
@@ -1006,16 +943,14 @@ mod test {
         assert_eq!(msg.command_name, IrcCommandName::ReplyMyInfo);
         assert_eq!(
             msg.command,
-            IrcCommand::ReplyMyInfo(
-                ReplyMyInfoParams::new(
-                    &Nickname("phillipt".to_string()),
-                    &"copper.libera.chat",
-                    &"solanum-1.0-dev",
-                    &"DGIMQRSZaghilopsuwz",
-                    &"CFILMPQRSTbcefgijklmnopqrstuvz",
-                    Some(&"bkloveqjfI"),
-                )
-            )
+            IrcCommand::ReplyMyInfo(ReplyMyInfoParams::new(
+                &Nickname("phillipt".to_string()),
+                &"copper.libera.chat",
+                &"solanum-1.0-dev",
+                &"DGIMQRSZaghilopsuwz",
+                &"CFILMPQRSTbcefgijklmnopqrstuvz",
+                Some(&"bkloveqjfI"),
+            ))
         );
 
         // And a message that doesn't specify the channels with parameters
@@ -1024,16 +959,14 @@ mod test {
         assert_eq!(msg.command_name, IrcCommandName::ReplyMyInfo);
         assert_eq!(
             msg.command,
-            IrcCommand::ReplyMyInfo(
-                ReplyMyInfoParams::new(
-                    &Nickname("phillipt".to_string()),
-                    &"copper.libera.chat",
-                    &"solanum-1.0-dev",
-                    &"DGIMQRSZaghilopsuwz",
-                    &"CFILMPQRSTbcefgijklmnopqrstuvz",
-                    None,
-                )
-            )
+            IrcCommand::ReplyMyInfo(ReplyMyInfoParams::new(
+                &Nickname("phillipt".to_string()),
+                &"copper.libera.chat",
+                &"solanum-1.0-dev",
+                &"DGIMQRSZaghilopsuwz",
+                &"CFILMPQRSTbcefgijklmnopqrstuvz",
+                None,
+            ))
         );
     }
 
@@ -1044,25 +977,23 @@ mod test {
         assert_eq!(msg.command_name, IrcCommandName::ReplyISupport);
         assert_eq!(
             msg.command,
-            IrcCommand::ReplyISupport(
-                ReplyISupportParams::new(
-                    &Nickname("phillipt".to_string()),
-                    &[
-                        "ACCOUNTEXTBAN=a".to_string(),
-                        "ETRACE".to_string(),
-                        "FNC".to_string(),
-                        "WHOX".to_string(),
-                        "KNOCK".to_string(),
-                        "CALLERID=g".to_string(),
-                        "MONITOR=100".to_string(),
-                        "SAFELIST".to_string(),
-                        "ELIST=CMNTU".to_string(),
-                        "CHANTYPES=#".to_string(),
-                        "EXCEPTS".to_string(),
-                        "INVEX".to_string(),
-                    ],
-                ),
-            )
+            IrcCommand::ReplyISupport(ReplyISupportParams::new(
+                &Nickname("phillipt".to_string()),
+                &[
+                    "ACCOUNTEXTBAN=a".to_string(),
+                    "ETRACE".to_string(),
+                    "FNC".to_string(),
+                    "WHOX".to_string(),
+                    "KNOCK".to_string(),
+                    "CALLERID=g".to_string(),
+                    "MONITOR=100".to_string(),
+                    "SAFELIST".to_string(),
+                    "ELIST=CMNTU".to_string(),
+                    "CHANTYPES=#".to_string(),
+                    "EXCEPTS".to_string(),
+                    "INVEX".to_string(),
+                ],
+            ),)
         )
     }
 
@@ -1127,7 +1058,8 @@ mod test {
 
     #[test]
     fn test_parse_list_user_me() {
-        let msg = parse_line(":copper.libera.chat 255 phillipt :I have 2192 clients and 1 servers\r\n");
+        let msg =
+            parse_line(":copper.libera.chat 255 phillipt :I have 2192 clients and 1 servers\r\n");
         assert_eq!(msg.origin, Some("copper.libera.chat".to_string()));
         assert_eq!(msg.command_name, IrcCommandName::ReplyListUserMe);
         assert_eq!(
@@ -1141,7 +1073,9 @@ mod test {
 
     #[test]
     fn test_parse_local_users() {
-        let msg = parse_line(":copper.libera.chat 265 phillipt 2192 2366 :Current local users 2192, max 2366\r\n");
+        let msg = parse_line(
+            ":copper.libera.chat 265 phillipt 2192 2366 :Current local users 2192, max 2366\r\n",
+        );
         assert_eq!(msg.origin, Some("copper.libera.chat".to_string()));
         assert_eq!(msg.command_name, IrcCommandName::ReplyLocalUsers);
         assert_eq!(
@@ -1157,7 +1091,8 @@ mod test {
 
     #[test]
     fn test_parse_local_users2() {
-        let msg = parse_line(":coulomb.oftc.net 265 phillipt :Current local users: 8331  Max: 8633\r\n");
+        let msg =
+            parse_line(":coulomb.oftc.net 265 phillipt :Current local users: 8331  Max: 8633\r\n");
         assert_eq!(msg.origin, Some("coulomb.oftc.net".to_string()));
         assert_eq!(msg.command_name, IrcCommandName::ReplyLocalUsers);
         assert_eq!(
@@ -1189,7 +1124,9 @@ mod test {
 
     #[test]
     fn test_parse_global_users2() {
-        let msg = parse_line(":coulomb.oftc.net 266 phillipt :Current global users: 31420  Max: 32418\r\n");
+        let msg = parse_line(
+            ":coulomb.oftc.net 266 phillipt :Current global users: 31420  Max: 32418\r\n",
+        );
         assert_eq!(msg.origin, Some("coulomb.oftc.net".to_string()));
         assert_eq!(msg.command_name, IrcCommandName::ReplyGlobalUsers);
         assert_eq!(
@@ -1219,7 +1156,9 @@ mod test {
 
     #[test]
     fn test_parse_message_of_the_day_start() {
-        let msg = parse_line(":copper.libera.chat 375 phillipt :- copper.libera.chat Message of the Day -\r\n");
+        let msg = parse_line(
+            ":copper.libera.chat 375 phillipt :- copper.libera.chat Message of the Day -\r\n",
+        );
         assert_eq!(msg.origin, Some("copper.libera.chat".to_string()));
         assert_eq!(msg.command_name, IrcCommandName::ReplyMessageOfTheDayStart);
         assert_eq!(
@@ -1233,7 +1172,9 @@ mod test {
 
     #[test]
     fn test_parse_message_of_the_day_line() {
-        let msg = parse_line(":copper.libera.chat 372 phillipt :- Welcome to Libera Chat, the IRC network for\r\n");
+        let msg = parse_line(
+            ":copper.libera.chat 372 phillipt :- Welcome to Libera Chat, the IRC network for\r\n",
+        );
         assert_eq!(msg.origin, Some("copper.libera.chat".to_string()));
         assert_eq!(msg.command_name, IrcCommandName::ReplyMessageOfTheDayLine);
         assert_eq!(
@@ -1266,10 +1207,7 @@ mod test {
         assert_eq!(msg.command_name, IrcCommandName::Mode);
         assert_eq!(
             msg.command,
-            IrcCommand::Mode(ModeParams::new(
-                &Nickname::new("phillipt"),
-                "+iw",
-            ))
+            IrcCommand::Mode(ModeParams::new(&Nickname::new("phillipt"), "+iw",))
         )
     }
 
@@ -1280,13 +1218,11 @@ mod test {
         assert_eq!(msg.command_name, IrcCommandName::Mode);
         assert_eq!(
             msg.command,
-            IrcCommand::Mode(
-                ModeParams::new(
-                    // TODO(PT): This should be a UserOrChannel?
-                    &Nickname("#zzzz13".to_string()),
-                    "+nt"
-                )
-            )
+            IrcCommand::Mode(ModeParams::new(
+                // TODO(PT): This should be a UserOrChannel?
+                &Nickname("#zzzz13".to_string()),
+                "+nt"
+            ))
         )
     }
 
@@ -1303,8 +1239,12 @@ mod test {
 
     #[test]
     fn test_parse_quit() {
-        let msg = parse_line(":phillipt!~phillipt@86.11.226.171 QUIT :Ping timeout: 264 seconds\r\n");
-        assert_eq!(msg.origin, Some("phillipt!~phillipt@86.11.226.171".to_string()));
+        let msg =
+            parse_line(":phillipt!~phillipt@86.11.226.171 QUIT :Ping timeout: 264 seconds\r\n");
+        assert_eq!(
+            msg.origin,
+            Some("phillipt!~phillipt@86.11.226.171".to_string())
+        );
         assert_eq!(msg.command_name, IrcCommandName::Quit);
         assert_eq!(
             msg.command,
@@ -1319,7 +1259,9 @@ mod test {
         assert_eq!(msg.command_name, IrcCommandName::Error);
         assert_eq!(
             msg.command,
-            IrcCommand::Error(ErrorParams::new("Closing Link: 86.11.226.171 (Ping timeout: 264 seconds)"))
+            IrcCommand::Error(ErrorParams::new(
+                "Closing Link: 86.11.226.171 (Ping timeout: 264 seconds)"
+            ))
         )
     }
 
@@ -1330,7 +1272,10 @@ mod test {
         assert_eq!(msg.command_name, IrcCommandName::ErrorNoSuchNick);
         assert_eq!(
             msg.command,
-            IrcCommand::ErrorNoSuchNick(DescriptorAndReasonParams::new("user msg", "No such nick/channel"))
+            IrcCommand::ErrorNoSuchNick(DescriptorAndReasonParams::new(
+                "user msg",
+                "No such nick/channel"
+            ))
         )
     }
 
@@ -1341,44 +1286,49 @@ mod test {
         assert_eq!(msg.command_name, IrcCommandName::ErrorUnknownCommand);
         assert_eq!(
             msg.command,
-            IrcCommand::ErrorUnknownCommand(ErrorUnknownCommandParams::new(Nickname("test".to_string()), "CMD", "Unknown command"))
+            IrcCommand::ErrorUnknownCommand(ErrorUnknownCommandParams::new(
+                Nickname("test".to_string()),
+                "CMD",
+                "Unknown command"
+            ))
         )
     }
 
     #[test]
     fn test_private_message() {
         let msg = parse_line(":CTCPServ!services@services.oftc.net PRIVMSG phillipt :VERSION\r\n");
-        assert_eq!(msg.origin, Some("CTCPServ!services@services.oftc.net".to_string()));
+        assert_eq!(
+            msg.origin,
+            Some("CTCPServ!services@services.oftc.net".to_string())
+        );
         assert_eq!(msg.command_name, IrcCommandName::PrivateMessage);
         assert_eq!(
             msg.command,
-            IrcCommand::PrivateMessage(
-                PrivateMessageParameters::new(
-                    &User("CTCPServ".to_string()),
-                    &UserOrChannel("phillipt".to_string()),
-                    ":VERSION",
-                )
-            )
+            IrcCommand::PrivateMessage(PrivateMessageParameters::new(
+                &User("CTCPServ".to_string()),
+                &UserOrChannel("phillipt".to_string()),
+                ":VERSION",
+            ))
         )
     }
 
     #[test]
     fn test_names() {
-        let msg = parse_line(":coulomb.oftc.net 353 phillip-testing2 = #test phillip-testingz noball FloodServ\r\n");
+        let msg = parse_line(
+            ":coulomb.oftc.net 353 phillip-testing2 = #test phillip-testingz noball FloodServ\r\n",
+        );
         assert_eq!(msg.origin, Some("coulomb.oftc.net".to_string()));
         assert_eq!(msg.command_name, IrcCommandName::Names);
         assert_eq!(
             msg.command,
-            IrcCommand::Names(
-                NamesParameters::new(
-                    "#test".to_string(),
-                    vec![
-                        "phillip-testingz".to_string(),
-                        "noball".to_string(),
-                        "FloodServ".to_string(),
-                    ],
-                )
-            )
+            IrcCommand::Names(NamesParameters::new(
+                "#test".to_string(),
+                vec![
+                    "phillip-testingz".to_string(),
+                    "noball".to_string(),
+                    "FloodServ".to_string(),
+                ],
+            ))
         )
     }
 
@@ -1389,28 +1339,25 @@ mod test {
         assert_eq!(msg.command_name, IrcCommandName::Names);
         assert_eq!(
             msg.command,
-            IrcCommand::Names(
-                NamesParameters::new(
-                    "#zzzz13".to_string(),
-                    vec![":@phillipt".to_string()],
-                )
-            )
+            IrcCommand::Names(NamesParameters::new(
+                "#zzzz13".to_string(),
+                vec![":@phillipt".to_string()],
+            ))
         )
     }
 
     #[test]
     fn test_end_of_names() {
-        let msg = parse_line(":coulomb.oftc.net 366 phillip-testing2 #edk2 :End of /NAMES list\r\n");
+        let msg =
+            parse_line(":coulomb.oftc.net 366 phillip-testing2 #edk2 :End of /NAMES list\r\n");
         assert_eq!(msg.origin, Some("coulomb.oftc.net".to_string()));
         assert_eq!(msg.command_name, IrcCommandName::EndOfNames);
         assert_eq!(
             msg.command,
-            IrcCommand::EndOfNames(
-                EndOfNamesParameters::new(
-                    "#edk2".to_string(),
-                    "End of /NAMES list".to_string(),
-                )
-            )
+            IrcCommand::EndOfNames(EndOfNamesParameters::new(
+                "#edk2".to_string(),
+                "End of /NAMES list".to_string(),
+            ))
         )
     }
 
@@ -1421,12 +1368,10 @@ mod test {
         assert_eq!(msg.command_name, IrcCommandName::EndOfNames);
         assert_eq!(
             msg.command,
-            IrcCommand::EndOfNames(
-                EndOfNamesParameters::new(
-                    "#zzzz13".to_string(),
-                    "End of /NAMES list.".to_string(),
-                )
-            )
+            IrcCommand::EndOfNames(EndOfNamesParameters::new(
+                "#zzzz13".to_string(),
+                "End of /NAMES list.".to_string(),
+            ))
         )
     }
 
@@ -1437,12 +1382,10 @@ mod test {
         assert_eq!(msg.command_name, IrcCommandName::Topic);
         assert_eq!(
             msg.command,
-            IrcCommand::Topic(
-                TopicParameters::new(
-                    "#edk2".to_string(),
-                    "EDK II/OVMF".to_string(),
-                )
-            )
+            IrcCommand::Topic(TopicParameters::new(
+                "#edk2".to_string(),
+                "EDK II/OVMF".to_string(),
+            ))
         )
     }
 
@@ -1453,28 +1396,25 @@ mod test {
         assert_eq!(msg.command_name, IrcCommandName::TopicLastSet);
         assert_eq!(
             msg.command,
-            IrcCommand::TopicLastSet(
-                TopicLastSetParameters::new(
-                    "#edk2".to_string(),
-                    "ChanServ".to_string(),
-                    "167583716".to_string(),
-                )
-            )
+            IrcCommand::TopicLastSet(TopicLastSetParameters::new(
+                "#edk2".to_string(),
+                "ChanServ".to_string(),
+                "167583716".to_string(),
+            ))
         )
     }
 
     #[test]
     fn test_join() {
         let msg = parse_line(":phillipt!~phillipt@86.11.226.171 JOIN :#zzzz13\r\n");
-        assert_eq!(msg.origin, Some("phillipt!~phillipt@86.11.226.171".to_string()));
+        assert_eq!(
+            msg.origin,
+            Some("phillipt!~phillipt@86.11.226.171".to_string())
+        );
         assert_eq!(msg.command_name, IrcCommandName::Join);
         assert_eq!(
             msg.command,
-            IrcCommand::Join(
-                JoinParameters::new(
-                    &Channel("#zzzz13".to_string()),
-                )
-            )
+            IrcCommand::Join(JoinParameters::new(&Channel("#zzzz13".to_string()),))
         )
     }
 }

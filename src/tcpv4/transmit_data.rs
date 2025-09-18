@@ -1,8 +1,5 @@
-use core::alloc::Layout;
-use core::mem;
-use core::mem::ManuallyDrop;
-use core::ptr::copy_nonoverlapping;
 use crate::tcpv4::TCPv4FragmentData;
+use core::{alloc::Layout, mem, mem::ManuallyDrop, ptr::copy_nonoverlapping};
 
 /// This type is necessary because the underlying structure has a flexible array member.
 /// Due to this, the memory for the instance needs to be carefully managed.
@@ -25,10 +22,8 @@ impl TCPv4TransmitDataHandle {
 
     pub(crate) fn new(data: &[u8]) -> Self {
         let fragment = ManuallyDrop::new(TCPv4FragmentData::with_data(data));
-        let layout = Layout::from_size_align(
-            Self::total_layout_size(1),
-            mem::align_of::<Self>(),
-        ).unwrap();
+        let layout =
+            Layout::from_size_align(Self::total_layout_size(1), mem::align_of::<Self>()).unwrap();
         unsafe {
             let ptr = alloc::alloc::alloc(layout) as *mut TCPv4TransmitData;
             (*ptr).push = true;
@@ -64,7 +59,8 @@ impl Drop for TCPv4TransmitDataHandle {
             let ptr = self.ptr as *mut TCPv4TransmitData;
 
             // First, drop all the fragments
-            let fragment_table: *mut ManuallyDrop<TCPv4FragmentData> = (*ptr).fragment_table.as_mut_ptr();
+            let fragment_table: *mut ManuallyDrop<TCPv4FragmentData> =
+                (*ptr).fragment_table.as_mut_ptr();
             for i in 0..((*ptr).fragment_count as usize) {
                 let fragment_ptr = fragment_table.add(i as _);
                 ManuallyDrop::drop(&mut *fragment_ptr);

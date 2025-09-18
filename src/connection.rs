@@ -1,23 +1,35 @@
-use alloc::boxed::Box;
-use alloc::rc::Rc;
-use alloc::vec;
-use alloc::vec::Vec;
-use core::cell::RefCell;
-use core::fmt::{Debug, Formatter};
-use core::mem::transmute;
-use core::str;
+use crate::{
+    event::ManagedEvent,
+    ipv4::IPv4Address,
+    tcpv4::{
+        TCPv4ClientConnectionModeParams, TCPv4ConnectionMode, TCPv4IoToken, TCPv4Protocol,
+        TCPv4ReceiveData, TCPv4ReceiveDataHandle, TCPv4ServiceBindingProtocol,
+    },
+};
+use alloc::{boxed::Box, rc::Rc, vec, vec::Vec};
+use core::{
+    cell::RefCell,
+    fmt::{Debug, Formatter},
+    mem::transmute,
+    str,
+};
 use log::info;
 use spin::mutex::SpinMutex;
-use uefi::prelude::BootServices;
-use uefi::{Handle, StatusExt};
-use uefi::table::boot::{EventType, OpenProtocolAttributes, OpenProtocolParams, ScopedProtocol, TimerTrigger};
+use uefi::{
+    prelude::BootServices,
+    table::boot::{
+        EventType, OpenProtocolAttributes, OpenProtocolParams, ScopedProtocol, TimerTrigger,
+    },
+    Handle, StatusExt,
+};
 use uefi_services::println;
-use crate::event::ManagedEvent;
-use crate::ipv4::IPv4Address;
-use crate::tcpv4::{TCPv4ClientConnectionModeParams, TCPv4ConnectionMode, TCPv4IoToken, TCPv4Protocol, TCPv4ReceiveData, TCPv4ReceiveDataHandle, TCPv4ServiceBindingProtocol};
 
-pub fn get_tcp_service_binding_protocol(bs: &BootServices) -> ScopedProtocol<TCPv4ServiceBindingProtocol> {
-    let tcp_service_binding_handle = bs.get_handle_for_protocol::<TCPv4ServiceBindingProtocol>().unwrap();
+pub fn get_tcp_service_binding_protocol(
+    bs: &BootServices,
+) -> ScopedProtocol<TCPv4ServiceBindingProtocol> {
+    let tcp_service_binding_handle = bs
+        .get_handle_for_protocol::<TCPv4ServiceBindingProtocol>()
+        .unwrap();
     let tcp_service_binding = unsafe {
         bs.open_protocol::<TCPv4ServiceBindingProtocol>(
             OpenProtocolParams {
@@ -26,7 +38,8 @@ pub fn get_tcp_service_binding_protocol(bs: &BootServices) -> ScopedProtocol<TCP
                 controller: None,
             },
             OpenProtocolAttributes::GetProtocol,
-        ).expect("Failed to open TCP service binding protocol")
+        )
+        .expect("Failed to open TCP service binding protocol")
     };
     tcp_service_binding
 }
@@ -38,11 +51,9 @@ pub fn get_tcp_protocol<'a>(
     let mut tcp_handle = core::mem::MaybeUninit::<Handle>::uninit();
     let tcp_handle_ptr = tcp_handle.as_mut_ptr();
     let result = unsafe {
-        (tcp_service_binding_proto.create_child)(
-            &tcp_service_binding_proto,
-            &mut *tcp_handle_ptr,
-        )
-    }.to_result();
+        (tcp_service_binding_proto.create_child)(&tcp_service_binding_proto, &mut *tcp_handle_ptr)
+    }
+    .to_result();
     result.expect("Failed to create TCP child protocol");
     let tcp_handle = unsafe { tcp_handle.assume_init() };
 
@@ -55,15 +66,22 @@ pub fn get_tcp_protocol<'a>(
             },
             OpenProtocolAttributes::GetProtocol,
         )
-    }.expect("Failed to open TCP protocol");
+    }
+    .expect("Failed to open TCP protocol");
     tcp_proto
 }
-
 
 pub struct TcpConnection<'a> {
     boot_services: &'static BootServices,
     tcp: SpinMutex<RefCell<ScopedProtocol<'a, TCPv4Protocol>>>,
-    active_rx: RefCell<Option<(Box<ManagedEvent<'a>>, Box<TCPv4ReceiveDataHandle<'a>>, &'a TCPv4ReceiveData, Box<TCPv4IoToken<'a>>)>>,
+    active_rx: RefCell<
+        Option<(
+            Box<ManagedEvent<'a>>,
+            Box<TCPv4ReceiveDataHandle<'a>>,
+            &'a TCPv4ReceiveData,
+            Box<TCPv4IoToken<'a>>,
+        )>,
+    >,
     pub recv_buffer: SpinMutex<RefCell<Vec<u8>>>,
 }
 
@@ -76,20 +94,20 @@ impl<'a> TcpConnection<'a> {
     ) -> Rc<Self> {
         tcp.configure(
             boot_services,
-            TCPv4ConnectionMode::Client(
-                TCPv4ClientConnectionModeParams::new(remote_ip, remote_port),
-            )
-        ).expect("Failed to configure the TCP connection");
+            TCPv4ConnectionMode::Client(TCPv4ClientConnectionModeParams::new(
+                remote_ip,
+                remote_port,
+            )),
+        )
+        .expect("Failed to configure the TCP connection");
         tcp.connect(boot_services);
 
-        let _self = Rc::new(
-            Self {
-                boot_services,
-                tcp: SpinMutex::new(RefCell::new(tcp)),
-                active_rx: RefCell::new(None),
-                recv_buffer: SpinMutex::new(RefCell::new(vec![])),
-            }
-        );
+        let _self = Rc::new(Self {
+            boot_services,
+            tcp: SpinMutex::new(RefCell::new(tcp)),
+            active_rx: RefCell::new(None),
+            recv_buffer: SpinMutex::new(RefCell::new(vec![])),
+        });
         _self
     }
 
@@ -104,16 +122,21 @@ impl<'a> TcpConnection<'a> {
             // Scoped so that we release active_rx before enqueueing the next receive operation
             {
                 let active_rx = self_rc.active_rx.borrow();
-                let active_rx = active_rx.as_ref().expect("Expected an active receive operation");
+                let active_rx = active_rx
+                    .as_ref()
+                    .expect("Expected an active receive operation");
                 let (_, rx_data_handle, _, _) = active_rx;
                 // Read the buffered data
                 let received_data = rx_data_handle.get_data_ref().read_buffers();
                 let recv_buffer = &self_rc.recv_buffer;
-                recv_buffer.lock().borrow_mut().extend_from_slice(&received_data);
+                recv_buffer
+                    .lock()
+                    .borrow_mut()
+                    .extend_from_slice(&received_data);
                 match str::from_utf8(&received_data) {
                     Ok(v) => {
                         //info!("RX {v}");
-                    },
+                    }
                     Err(_) => {
                         info!("RX (no decode) {0:?}", received_data);
                     }
@@ -147,16 +170,18 @@ impl<'a> TcpConnection<'a> {
         let result = unsafe {
             let tcp = self.tcp.lock();
             let tcp = tcp.borrow_mut();
-            (tcp.receive_fn)(
-                &tcp,
-                &*io_token_ptr,
-            )
+            (tcp.receive_fn)(&tcp, &*io_token_ptr)
         };
-        result.to_result().expect("Failed to set up receive handler");
+        result
+            .to_result()
+            .expect("Failed to set up receive handler");
     }
 
     pub fn transmit(&self, data: &[u8]) {
-        self.tcp.lock().borrow_mut().transmit(&self.boot_services, data)
+        self.tcp
+            .lock()
+            .borrow_mut()
+            .transmit(&self.boot_services, data)
     }
 }
 
@@ -165,4 +190,3 @@ impl Debug for TcpConnection<'_> {
         write!(f, "<TcpConnection>")
     }
 }
-

@@ -1,15 +1,16 @@
-use alloc::boxed::Box;
-use alloc::rc::Rc;
-use agx_definitions::{LikeLayerSlice, Rect, RectInsets, Size, Point, PixelByteLayout, Color};
-use libgui::bordered::Bordered;
-use agx_definitions::{Drawable, NestedLayerSlice};
-use libgui::KeyCode;
-use libgui::ui_elements::UIElement;
-use alloc::rc::Weak;
-use libgui::view::View;
+use agx_definitions::{
+    Color, Drawable, LikeLayerSlice, NestedLayerSlice, PixelByteLayout, Point, Rect, RectInsets,
+    Size,
+};
+use alloc::{
+    boxed::Box,
+    rc::{Rc, Weak},
+    vec::Vec,
+};
+use libgui::{
+    bordered::Bordered, text_input_view::TextInputView, ui_elements::UIElement, view::View, KeyCode,
+};
 use libgui_derive::{Bordered, Drawable, NestedLayerSlice, UIElement};
-use alloc::vec::Vec;
-use libgui::text_input_view::TextInputView;
 use ttf_renderer::Font;
 
 #[derive(Drawable, NestedLayerSlice, UIElement, Bordered)]
@@ -32,11 +33,9 @@ impl InputBoxView {
             PixelByteLayout::BGRA,
         );
 
-        let _self = Rc::new(
-            Self {
-                view: Rc::clone(&view),
-            }
-        );
+        let _self = Rc::new(Self {
+            view: Rc::clone(&view),
+        });
 
         /*
         let prompt = Label::new_with_font(

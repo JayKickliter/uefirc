@@ -1,14 +1,17 @@
-use alloc::format;
-use core::alloc::Layout;
-use core::ffi::c_void;
-use core::fmt::{Debug, Formatter};
-use core::ptr::copy_nonoverlapping;
-use uefi::{Event, Status};
 use crate::event::ManagedEvent;
+use alloc::format;
+use core::{
+    alloc::Layout,
+    ffi::c_void,
+    fmt::{Debug, Formatter},
+    ptr::copy_nonoverlapping,
+};
+use uefi::{Event, Status};
 
-use crate::ipv4::IPv4Address;
-use crate::tcpv4::receive_data::TCPv4ReceiveData;
-use crate::tcpv4::{TCPv4TransmitData};
+use crate::{
+    ipv4::IPv4Address,
+    tcpv4::{receive_data::TCPv4ReceiveData, TCPv4TransmitData},
+};
 
 #[derive(Debug)]
 #[repr(C)]
@@ -29,12 +32,8 @@ pub struct TCPv4AccessPoint {
 impl TCPv4AccessPoint {
     fn new(connection_mode: TCPv4ConnectionMode) -> Self {
         let (remote_ip, remote_port, is_client) = match connection_mode {
-            TCPv4ConnectionMode::Client(params) => {
-                (params.remote_ip, params.remote_port, true)
-            }
-            TCPv4ConnectionMode::Server => {
-                (IPv4Address::zero(), 0, false)
-            }
+            TCPv4ConnectionMode::Client(params) => (params.remote_ip, params.remote_port, true),
+            TCPv4ConnectionMode::Server => (IPv4Address::zero(), 0, false),
         };
         Self {
             use_default_address: true,
@@ -46,7 +45,6 @@ impl TCPv4AccessPoint {
             remote_address: remote_ip,
             remote_port,
             active_flag: is_client,
-
         }
     }
 }
@@ -87,10 +85,7 @@ pub struct TCPv4ClientConnectionModeParams {
 }
 
 impl TCPv4ClientConnectionModeParams {
-    pub fn new(
-        remote_ip: IPv4Address,
-        remote_port: u16,
-    ) -> Self {
+    pub fn new(remote_ip: IPv4Address, remote_port: u16) -> Self {
         Self {
             remote_ip,
             remote_port,
@@ -135,8 +130,7 @@ impl<'a> TCPv4IoToken<'a> {
         let packet = {
             if tx.is_some() {
                 TCPv4Packet { tx_data: tx }
-            }
-            else {
+            } else {
                 let rx_ref = rx.as_ref();
                 rx_ref.expect("Either RX or TX data handles must be provided");
                 TCPv4Packet { rx_data: rx }
@@ -213,11 +207,7 @@ impl TCPv4FragmentData {
             let data_len = data.len();
             let _self = Self::with_buffer_len(data_len);
             let buffer = _self.fragment_buf as *mut u8;
-            copy_nonoverlapping(
-                data.as_ptr(),
-                buffer,
-                data_len,
-            );
+            copy_nonoverlapping(data.as_ptr(), buffer, data_len);
             _self
         }
     }

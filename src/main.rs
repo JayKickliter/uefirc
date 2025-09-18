@@ -2,22 +2,21 @@
 #![cfg_attr(feature = "run_in_uefi", no_std)]
 #![cfg_attr(feature = "run_in_uefi", feature(start))]
 #![cfg_attr(feature = "run_in_uefi", no_main)]
-#[allow(invalid_reference_casting)]
-
-#[cfg(feature = "run_in_uefi")]
-mod tcpv4;
-#[cfg(feature = "run_in_uefi")]
-mod ipv4;
-#[cfg(feature = "run_in_uefi")]
-mod event;
-#[cfg(feature = "run_in_uefi")]
-mod connection;
-#[cfg(feature = "run_in_uefi")]
-mod ui;
 #[cfg(feature = "run_in_uefi")]
 mod app;
 #[cfg(feature = "run_in_uefi")]
+mod connection;
+#[cfg(feature = "run_in_uefi")]
+mod event;
+#[cfg(feature = "run_in_uefi")]
 mod fs;
+#[cfg(feature = "run_in_uefi")]
+mod ipv4;
+#[allow(invalid_reference_casting)]
+#[cfg(feature = "run_in_uefi")]
+mod tcpv4;
+#[cfg(feature = "run_in_uefi")]
+mod ui;
 
 mod gui;
 mod irc;
@@ -27,9 +26,9 @@ extern crate alloc;
 /* For when running in UEFI */
 
 #[cfg(feature = "run_in_uefi")]
-use uefi::Status;
-#[cfg(feature = "run_in_uefi")]
 use uefi::prelude::*;
+#[cfg(feature = "run_in_uefi")]
+use uefi::Status;
 #[cfg(feature = "run_in_uefi")]
 mod main_uefi;
 
@@ -48,4 +47,3 @@ mod main_hosted;
 fn main() {
     main_hosted::main();
 }
-

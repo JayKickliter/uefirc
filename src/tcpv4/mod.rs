@@ -1,25 +1,16 @@
-mod lifecycle_manager;
-mod transmit_data;
-mod proto;
 mod definitions;
+mod lifecycle_manager;
+mod proto;
 mod receive_data;
+mod transmit_data;
 
-pub use self::proto::{
-    TCPv4Protocol,
-    TCPv4ServiceBindingProtocol,
-};
-pub use self::definitions::{
-    TCPv4ClientConnectionModeParams,
-    TCPv4ConnectionMode,
-    TCPv4FragmentData,
-    TCPv4IoToken,
+pub use self::{
+    definitions::{
+        TCPv4ClientConnectionModeParams, TCPv4ConnectionMode, TCPv4FragmentData, TCPv4IoToken,
+    },
+    proto::{TCPv4Protocol, TCPv4ServiceBindingProtocol},
 };
 
-pub use self::transmit_data::{
-    TCPv4TransmitData,
-};
+pub use self::transmit_data::TCPv4TransmitData;
 
-pub use self::receive_data::{
-    TCPv4ReceiveDataHandle,
-    TCPv4ReceiveData,
-};
+pub use self::receive_data::{TCPv4ReceiveData, TCPv4ReceiveDataHandle};

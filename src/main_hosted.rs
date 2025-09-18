@@ -3,20 +3,22 @@ use agx_definitions::{
 };
 use ttf_renderer::{parse, render_glyph_onto, Codepoint, Font};
 
-use libgui::text_input_view::TextInputView;
-use libgui::ui_elements::UIElement;
-use libgui::AwmWindow;
+use libgui::{text_input_view::TextInputView, ui_elements::UIElement, AwmWindow};
 use log::info;
-use std::cell::RefCell;
-use std::rc::Rc;
-use std::{error, fs};
+use std::{cell::RefCell, error, fs, rc::Rc};
 
 pub fn main() -> Result<(), Box<dyn error::Error>> {
     let window_size = Size::new(1360, 768);
     let window = Rc::new(AwmWindow::new("Hosted UEFIRC", window_size));
 
-    let font_regular = ttf_renderer::parse(&std::fs::read("/Users/philliptennen/CLionProjects/uefirc/esp/EFI/Boot/BigCaslon.ttf").expect("Failed to read font file"));
-    let font_arial = ttf_renderer::parse(&std::fs::read("/Users/philliptennen/CLionProjects/uefirc/esp/EFI/Boot/Arial.ttf").expect("Failed to read font file"));
+    let font_regular = ttf_renderer::parse(
+        &std::fs::read("/Users/philliptennen/CLionProjects/uefirc/esp/EFI/Boot/BigCaslon.ttf")
+            .expect("Failed to read font file"),
+    );
+    let font_arial = ttf_renderer::parse(
+        &std::fs::read("/Users/philliptennen/CLionProjects/uefirc/esp/EFI/Boot/Arial.ttf")
+            .expect("Failed to read font file"),
+    );
     /*
     let main_view = MainView::new(
         font_regular,

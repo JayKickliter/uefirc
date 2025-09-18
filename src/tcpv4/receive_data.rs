@@ -1,11 +1,6 @@
-use alloc::vec;
-use alloc::vec::Vec;
-use core::alloc::Layout;
-use core::marker::PhantomData;
-use core::mem;
-use core::mem::ManuallyDrop;
-use core::ptr::copy_nonoverlapping;
 use crate::tcpv4::TCPv4FragmentData;
+use alloc::{vec, vec::Vec};
+use core::{alloc::Layout, marker::PhantomData, mem, mem::ManuallyDrop, ptr::copy_nonoverlapping};
 
 /// This type is necessary because the underlying structure has a flexible array member.
 /// Due to this, the memory for the instance needs to be carefully managed.
@@ -28,12 +23,10 @@ impl<'a> TCPv4ReceiveDataHandle<'a> {
     }
 
     pub(crate) fn new() -> Self {
-        let buffer_len = 2048*16;
+        let buffer_len = 2048 * 16;
         let fragment = ManuallyDrop::new(TCPv4FragmentData::with_buffer_len(buffer_len));
-        let layout = Layout::from_size_align(
-            Self::total_layout_size(1),
-            mem::align_of::<Self>(),
-        ).unwrap();
+        let layout =
+            Layout::from_size_align(Self::total_layout_size(1), mem::align_of::<Self>()).unwrap();
         unsafe {
             let ptr = alloc::alloc::alloc(layout) as *mut TCPv4ReceiveData;
             (*ptr).urgent = false;
@@ -67,7 +60,8 @@ impl Drop for TCPv4ReceiveDataHandle<'_> {
         let ptr = self.ptr as *mut TCPv4ReceiveData;
         unsafe {
             // First, drop all the fragments
-            let fragment_table: *mut ManuallyDrop<TCPv4FragmentData> = (*ptr).fragment_table.as_mut_ptr();
+            let fragment_table: *mut ManuallyDrop<TCPv4FragmentData> =
+                (*ptr).fragment_table.as_mut_ptr();
             for i in 0..((*ptr).fragment_count as usize) {
                 let fragment_ptr = fragment_table.add(i as _);
                 ManuallyDrop::drop(&mut *fragment_ptr);
@@ -93,12 +87,14 @@ impl TCPv4ReceiveData {
         let mut out = vec![];
         unsafe {
             let ptr = self as *const Self;
-            let fragment_table: *const ManuallyDrop<TCPv4FragmentData> = (*ptr).fragment_table.as_ptr();
+            let fragment_table: *const ManuallyDrop<TCPv4FragmentData> =
+                (*ptr).fragment_table.as_ptr();
             for i in 0..(self.fragment_count as usize) {
                 let fragment_ptr = fragment_table.add(i as _);
                 let fragment = &*fragment_ptr;
                 let fragment_buf = fragment.fragment_buf as *const u8;
-                let fragment_slice = core::slice::from_raw_parts(fragment_buf, self.data_length as _);
+                let fragment_slice =
+                    core::slice::from_raw_parts(fragment_buf, self.data_length as _);
                 out.extend_from_slice(fragment_slice);
             }
         }

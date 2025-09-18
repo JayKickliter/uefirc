@@ -1,5 +1,7 @@
-use alloc::string::{String, ToString};
-use alloc::vec::Vec;
+use alloc::{
+    string::{String, ToString},
+    vec::Vec,
+};
 
 #[derive(Debug)]
 pub struct Tokenizer {
@@ -22,7 +24,9 @@ impl Tokenizer {
             None => return None,
             Some(idx) => idx,
         };
-        let part = self.line[self.cursor..self.cursor + ch_idx].iter().collect::<String>();
+        let part = self.line[self.cursor..self.cursor + ch_idx]
+            .iter()
+            .collect::<String>();
         // Skip the delimiter as well
         self.cursor += ch_idx + 1;
         Some(part)
@@ -33,7 +37,10 @@ impl Tokenizer {
         let mut delimiter_len = 0;
 
         for &delimiter in delimiters {
-            if let Some(idx) = self.line[self.cursor..].windows(delimiter.len()).position(|w| w == delimiter.chars().collect::<Vec<char>>()) {
+            if let Some(idx) = self.line[self.cursor..]
+                .windows(delimiter.len())
+                .position(|w| w == delimiter.chars().collect::<Vec<char>>())
+            {
                 if earliest_delimiter_pos.map_or(true, |e| idx < e) {
                     earliest_delimiter_pos = Some(idx);
                     delimiter_len = delimiter.len();
@@ -45,12 +52,14 @@ impl Tokenizer {
             // No delimiter found
             None => None,
             Some(delim_start_idx) => {
-                let part = self.line[self.cursor..self.cursor + delim_start_idx].iter().collect::<String>();
+                let part = self.line[self.cursor..self.cursor + delim_start_idx]
+                    .iter()
+                    .collect::<String>();
                 // Skip the delimiter as well
                 // Update the cursor position to skip past the delimiter
                 self.cursor += delim_start_idx + delimiter_len;
                 Some(part)
-            },
+            }
         }
     }
 
@@ -76,7 +85,9 @@ impl Tokenizer {
     }
 
     pub fn match_str(&mut self, expected: &str) {
-        let actual_str = self.line[self.cursor..self.cursor + expected.len()].iter().collect::<String>();
+        let actual_str = self.line[self.cursor..self.cursor + expected.len()]
+            .iter()
+            .collect::<String>();
         if actual_str != expected {
             panic!("Expected \"{expected}\", but parsed \"{actual_str}\"");
         }
@@ -86,8 +97,8 @@ impl Tokenizer {
 
 #[cfg(test)]
 mod test {
-    use alloc::string::ToString;
     use crate::irc::Tokenizer;
+    use alloc::string::ToString;
 
     #[test]
     fn test_read_to() {
@@ -135,4 +146,3 @@ mod test {
         assert_eq!(t.read_to_str("\r\n"), None);
     }
 }
-

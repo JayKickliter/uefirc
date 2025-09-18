@@ -1,9 +1,11 @@
 use agx_definitions::Size;
 use log::info;
-use uefi::Result;
-use uefi::prelude::BootServices;
-use uefi::proto::console::gop::GraphicsOutput;
-use uefi::table::boot::{OpenProtocolAttributes, OpenProtocolParams, ScopedProtocol};
+use uefi::{
+    prelude::BootServices,
+    proto::console::gop::GraphicsOutput,
+    table::boot::{OpenProtocolAttributes, OpenProtocolParams, ScopedProtocol},
+    Result,
+};
 use uefi_services::println;
 
 pub fn set_resolution(
@@ -28,8 +30,14 @@ pub fn set_resolution(
     for mode in gop.modes(boot_services) {
         let res = mode.info().resolution();
         info!("Found supported resolution {:?}", res);
-        if res == (desired_resolution.width as _, desired_resolution.height as _) {
-            gop.set_mode(&mode).expect("Failed to set desired resolution");
+        if res
+            == (
+                desired_resolution.width as _,
+                desired_resolution.height as _,
+            )
+        {
+            gop.set_mode(&mode)
+                .expect("Failed to set desired resolution");
             switched_to_desired_resolution = true;
             break;
         }
