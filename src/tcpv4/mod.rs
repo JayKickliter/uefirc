@@ -9,8 +9,6 @@ pub use self::{
         TCPv4ClientConnectionModeParams, TCPv4ConnectionMode, TCPv4FragmentData, TCPv4IoToken,
     },
     proto::{TCPv4Protocol, TCPv4ServiceBindingProtocol},
+    receive_data::{TCPv4ReceiveData, TCPv4ReceiveDataHandle},
+    transmit_data::TCPv4TransmitData,
 };
-
-pub use self::transmit_data::TCPv4TransmitData;
-
-pub use self::receive_data::{TCPv4ReceiveData, TCPv4ReceiveDataHandle};

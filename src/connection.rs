@@ -23,7 +23,7 @@ use uefi::{
 pub fn get_tcp_service_binding_protocol() -> ScopedProtocol<TCPv4ServiceBindingProtocol> {
     let tcp_service_binding_handle =
         boot::get_handle_for_protocol::<TCPv4ServiceBindingProtocol>().unwrap();
-    let tcp_service_binding = unsafe {
+    unsafe {
         boot::open_protocol::<TCPv4ServiceBindingProtocol>(
             OpenProtocolParams {
                 handle: tcp_service_binding_handle,
@@ -33,8 +33,7 @@ pub fn get_tcp_service_binding_protocol() -> ScopedProtocol<TCPv4ServiceBindingP
             OpenProtocolAttributes::GetProtocol,
         )
         .expect("Failed to open TCP service binding protocol")
-    };
-    tcp_service_binding
+    }
 }
 
 pub fn get_tcp_protocol(
@@ -49,7 +48,7 @@ pub fn get_tcp_protocol(
     result.expect("Failed to create TCP child protocol");
     let tcp_handle = unsafe { tcp_handle.assume_init() };
 
-    let tcp_proto = unsafe {
+    unsafe {
         boot::open_protocol::<TCPv4Protocol>(
             OpenProtocolParams {
                 handle: tcp_handle,
@@ -59,8 +58,7 @@ pub fn get_tcp_protocol(
             OpenProtocolAttributes::GetProtocol,
         )
     }
-    .expect("Failed to open TCP protocol");
-    tcp_proto
+    .expect("Failed to open TCP protocol")
 }
 
 type ActiveRx<'a> = RefCell<
