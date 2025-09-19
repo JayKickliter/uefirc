@@ -13,10 +13,8 @@ use crate::{
 use alloc::string::{String, ToString};
 use log::info;
 use uefi::{
-    prelude::BootServices, proto::unsafe_protocol, table::boot::EventType, Error, Handle, Status,
-    StatusExt,
+    boot, boot::EventType, println, proto::unsafe_protocol, Error, Handle, Status, StatusExt,
 };
-use uefi_services::println;
 
 #[derive(Debug)]
 #[repr(C)]
@@ -75,11 +73,7 @@ impl TCPv4Protocol {
             .expect("Failed to reset TCP stack")
     }
 
-    pub fn configure(
-        &self,
-        bt: &BootServices,
-        connection_mode: TCPv4ConnectionMode,
-    ) -> uefi::Result<(), String> {
+    pub fn configure(&self, connection_mode: TCPv4ConnectionMode) -> uefi::Result<(), String> {
         let configuration = TCPv4ConfigData::new(connection_mode, None);
         // Maximum timeout of 10 seconds
         for _ in 0..10 {
@@ -89,10 +83,10 @@ impl TCPv4Protocol {
                 return Ok(());
             } else if result == Status::NO_MAPPING {
                 info!("DHCP still running, waiting...");
-                bt.stall(1_000_000);
+                boot::stall(1_000_000);
             } else {
                 info!("Error {result:?}, will spin and try again");
-                bt.stall(1_000_000);
+                boot::stall(1_000_000);
             }
         }
         Err(Error::new(
@@ -132,8 +126,8 @@ impl TCPv4Protocol {
         }
     }
 
-    pub fn connect(&mut self, bs: &'static BootServices) {
-        let event = ManagedEvent::new(bs, EventType::NOTIFY_WAIT, |_| {});
+    pub fn connect(&mut self) {
+        let event = ManagedEvent::new(EventType::NOTIFY_WAIT, |_| {});
         let completion_token = TCPv4CompletionToken::new(&event);
         (self.connect_fn)(self, &completion_token)
             .to_result()
@@ -141,8 +135,8 @@ impl TCPv4Protocol {
         event.wait();
     }
 
-    pub fn transmit(&mut self, bs: &'static BootServices, data: &[u8]) {
-        let event = ManagedEvent::new(bs, EventType::NOTIFY_WAIT, move |_| {
+    pub fn transmit(&mut self, data: &[u8]) {
+        let event = ManagedEvent::new(EventType::NOTIFY_WAIT, move |_| {
             println!("Transmit completed!")
         });
 

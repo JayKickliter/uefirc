@@ -15,22 +15,19 @@ use core::{
 use log::info;
 use spin::mutex::SpinMutex;
 use uefi::{
-    prelude::BootServices,
-    table::boot::{EventType, OpenProtocolAttributes, OpenProtocolParams, ScopedProtocol},
+    boot,
+    boot::{EventType, OpenProtocolAttributes, OpenProtocolParams, ScopedProtocol},
     Handle, StatusExt,
 };
 
-pub fn get_tcp_service_binding_protocol(
-    bs: &BootServices,
-) -> ScopedProtocol<TCPv4ServiceBindingProtocol> {
-    let tcp_service_binding_handle = bs
-        .get_handle_for_protocol::<TCPv4ServiceBindingProtocol>()
-        .unwrap();
+pub fn get_tcp_service_binding_protocol() -> ScopedProtocol<TCPv4ServiceBindingProtocol> {
+    let tcp_service_binding_handle =
+        boot::get_handle_for_protocol::<TCPv4ServiceBindingProtocol>().unwrap();
     let tcp_service_binding = unsafe {
-        bs.open_protocol::<TCPv4ServiceBindingProtocol>(
+        boot::open_protocol::<TCPv4ServiceBindingProtocol>(
             OpenProtocolParams {
                 handle: tcp_service_binding_handle,
-                agent: bs.image_handle(),
+                agent: boot::image_handle(),
                 controller: None,
             },
             OpenProtocolAttributes::GetProtocol,
@@ -40,10 +37,9 @@ pub fn get_tcp_service_binding_protocol(
     tcp_service_binding
 }
 
-pub fn get_tcp_protocol<'a>(
-    bs: &'a BootServices,
-    tcp_service_binding_proto: &ScopedProtocol<'a, TCPv4ServiceBindingProtocol>,
-) -> ScopedProtocol<'a, TCPv4Protocol> {
+pub fn get_tcp_protocol(
+    tcp_service_binding_proto: &ScopedProtocol<TCPv4ServiceBindingProtocol>,
+) -> ScopedProtocol<TCPv4Protocol> {
     let mut tcp_handle = core::mem::MaybeUninit::<Handle>::uninit();
     let tcp_handle_ptr = tcp_handle.as_mut_ptr();
     let result = unsafe {
@@ -54,10 +50,10 @@ pub fn get_tcp_protocol<'a>(
     let tcp_handle = unsafe { tcp_handle.assume_init() };
 
     let tcp_proto = unsafe {
-        bs.open_protocol::<TCPv4Protocol>(
+        boot::open_protocol::<TCPv4Protocol>(
             OpenProtocolParams {
                 handle: tcp_handle,
-                agent: bs.image_handle(),
+                agent: boot::image_handle(),
                 controller: None,
             },
             OpenProtocolAttributes::GetProtocol,
@@ -69,7 +65,7 @@ pub fn get_tcp_protocol<'a>(
 
 type ActiveRx<'a> = RefCell<
     Option<(
-        Box<ManagedEvent<'a>>,
+        Box<ManagedEvent>,
         Box<TCPv4ReceiveDataHandle<'a>>,
         &'a TCPv4ReceiveData,
         Box<TCPv4IoToken<'a>>,
@@ -77,31 +73,24 @@ type ActiveRx<'a> = RefCell<
 >;
 
 pub struct TcpConnection<'a> {
-    boot_services: &'static BootServices,
-    tcp: SpinMutex<RefCell<ScopedProtocol<'a, TCPv4Protocol>>>,
+    tcp: SpinMutex<RefCell<ScopedProtocol<TCPv4Protocol>>>,
     active_rx: ActiveRx<'a>,
     pub recv_buffer: SpinMutex<RefCell<Vec<u8>>>,
 }
 
 impl<'a> TcpConnection<'a> {
     pub fn new(
-        boot_services: &'static BootServices,
-        mut tcp: ScopedProtocol<'a, TCPv4Protocol>,
+        mut tcp: ScopedProtocol<TCPv4Protocol>,
         remote_ip: IPv4Address,
         remote_port: u16,
     ) -> Rc<Self> {
-        tcp.configure(
-            boot_services,
-            TCPv4ConnectionMode::Client(TCPv4ClientConnectionModeParams::new(
-                remote_ip,
-                remote_port,
-            )),
-        )
+        tcp.configure(TCPv4ConnectionMode::Client(
+            TCPv4ClientConnectionModeParams::new(remote_ip, remote_port),
+        ))
         .expect("Failed to configure the TCP connection");
-        tcp.connect(boot_services);
+        tcp.connect();
 
         Rc::new(Self {
-            boot_services,
             tcp: SpinMutex::new(RefCell::new(tcp)),
             active_rx: RefCell::new(None),
             recv_buffer: SpinMutex::new(RefCell::new(vec![])),
@@ -145,11 +134,7 @@ impl<'a> TcpConnection<'a> {
 
             // Allow self_rc to be dropped, as we create another clone on the next call to the outer method.
         };
-        let rx_event = Box::new(ManagedEvent::new(
-            self.boot_services,
-            EventType::NOTIFY_SIGNAL,
-            cb,
-        ));
+        let rx_event = Box::new(ManagedEvent::new(EventType::NOTIFY_SIGNAL, cb));
         let rx_data_handle = Box::new(TCPv4ReceiveDataHandle::<'a>::new());
         let rx_data = rx_data_handle.get_data_ref();
         let io_token = Box::new(TCPv4IoToken::new(&rx_event, None, Some(rx_data)));
@@ -175,10 +160,7 @@ impl<'a> TcpConnection<'a> {
     }
 
     pub fn transmit(&self, data: &[u8]) {
-        self.tcp
-            .lock()
-            .borrow_mut()
-            .transmit(self.boot_services, data)
+        self.tcp.lock().borrow_mut().transmit(data)
     }
 }
 

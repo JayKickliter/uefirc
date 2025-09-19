@@ -21,14 +21,30 @@ use libgui::{button::Button, text_view::TextView, ui_elements::UIElement, AwmWin
 use log::info;
 use ttf_renderer::{rendered_string_size, Font};
 use uefi::{
+    boot,
+    boot::ScopedProtocol,
+    helpers,
     prelude::*,
+    println,
     proto::console::{
         gop::{BltOp, BltPixel, BltRegion, GraphicsOutput},
         pointer::Pointer,
         text::Key,
     },
-    table::boot::ScopedProtocol,
 };
+
+// Global allocator and panic handler
+extern crate alloc;
+use uefi::allocator::Allocator;
+
+#[global_allocator]
+static ALLOCATOR: Allocator = Allocator;
+
+#[panic_handler]
+fn panic(info: &core::panic::PanicInfo) -> ! {
+    println!("Panic: {}", info);
+    loop {}
+}
 
 #[derive(Debug, Copy, Clone)]
 struct RenderStructuredMessageAttributes<'a> {
@@ -665,11 +681,9 @@ impl<'a> App<'a> {
         core::mem::forget(buf_as_blt_pixel);
     }
 
-    fn handle_next_key_press(&self, system_table: &mut SystemTable<Boot>) -> bool {
+    fn handle_next_key_press(&self) -> bool {
         let key_held_on_this_iteration = {
-            let maybe_key = system_table
-                .stdin()
-                .read_key()
+            let maybe_key = uefi::system::with_stdin(|input| input.read_key())
                 .expect("Failed to poll for a key");
             match maybe_key {
                 None => {
@@ -713,9 +727,9 @@ impl<'a> App<'a> {
         true
     }
 
-    fn handle_keyboard_updates(&self, system_table: &mut SystemTable<Boot>) {
+    fn handle_keyboard_updates(&self) {
         loop {
-            if !self.handle_next_key_press(system_table) {
+            if !self.handle_next_key_press() {
                 break;
             }
         }
@@ -829,9 +843,9 @@ impl<'a> App<'a> {
     }
 }
 
-fn parse_config_file(boot_services: &BootServices) -> (IPv4Address, u16, String, String) {
+fn parse_config_file() -> (IPv4Address, u16, String, String) {
     // PT: Not going to bother making an ergonomic parse here for now - this is intentionally basic
-    let config_bytes = read_file(boot_services, "EFI\\Boot\\config.txt");
+    let config_bytes = read_file("EFI\\Boot\\config.txt");
     let config_str = match String::from_utf8(config_bytes) {
         Ok(s) => s,
         Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
@@ -883,26 +897,23 @@ fn parse_config_file(boot_services: &BootServices) -> (IPv4Address, u16, String,
     )
 }
 
-pub fn main(_image_handle: Handle, mut system_table: SystemTable<Boot>) -> Status {
-    uefi_services::init(&mut system_table).unwrap();
-    let bs = system_table.boot_services();
-    let bs: &'static BootServices = unsafe { core::mem::transmute(bs) };
+pub fn main() -> Status {
+    helpers::init().unwrap();
 
     // Disable the UEFI watchdog timer as we want to run indefinitely
-    bs.set_watchdog_timer(0, 0x1ffff, None)
-        .expect("Failed to disable watchdog timer");
+    boot::set_watchdog_timer(0, 0x1ffff, None).expect("Failed to disable watchdog timer");
 
     info!("Parsing fonts...");
-    let font_regular = ttf_renderer::parse(&read_file(bs, "EFI\\Boot\\BigCaslon.ttf"));
-    let font_italic = ttf_renderer::parse(&read_file(bs, "EFI\\Boot\\new_york_italic.ttf"));
+    let font_regular = ttf_renderer::parse(&read_file("EFI\\Boot\\BigCaslon.ttf"));
+    let font_italic = ttf_renderer::parse(&read_file("EFI\\Boot\\new_york_italic.ttf"));
     info!("All done!");
 
     let resolution = Size::new(1360, 768);
-    let mut graphics_protocol = set_resolution(bs, resolution).unwrap();
+    let mut graphics_protocol = set_resolution(resolution).unwrap();
 
-    let mut irc_client = IrcClient::new(bs);
+    let mut irc_client = IrcClient::new();
     {
-        let (ip_address, port, nickname, real_name) = parse_config_file(bs);
+        let (ip_address, port, nickname, real_name) = parse_config_file();
         irc_client.connect_to_server_and_register(ip_address, port, &nickname, &real_name);
     }
     {
@@ -911,12 +922,10 @@ pub fn main(_image_handle: Handle, mut system_table: SystemTable<Boot>) -> Statu
         Rc::clone(conn).set_up_receive_signal_handler();
     }
 
-    let pointer_handle = bs
-        .get_handle_for_protocol::<Pointer>()
+    let pointer_handle = boot::get_handle_for_protocol::<Pointer>()
         .expect("Failed to find handle for Pointer protocol");
-    let mut pointer = bs
-        .open_protocol_exclusive::<Pointer>(pointer_handle)
-        .expect("failed to open proto");
+    let mut pointer =
+        boot::open_protocol_exclusive::<Pointer>(pointer_handle).expect("failed to open proto");
     pointer.reset(false).expect("Failed to reset cursor");
 
     let pointer_resolution = pointer.mode().resolution;
@@ -931,7 +940,7 @@ pub fn main(_image_handle: Handle, mut system_table: SystemTable<Boot>) -> Statu
     );
 
     loop {
-        app.handle_keyboard_updates(&mut system_table);
+        app.handle_keyboard_updates();
         app.handle_mouse_updates(&mut pointer, pointer_resolution);
         app.step();
         app.draw_and_push_to_display(&mut graphics_protocol);

@@ -32,8 +32,8 @@ mod main_uefi;
 
 #[cfg(feature = "run_in_uefi")]
 #[entry]
-fn main(image_handle: Handle, system_table: SystemTable<Boot>) -> Status {
-    main_uefi::main(image_handle, system_table)
+fn main() -> Status {
+    main_uefi::main()
 }
 
 /* For when running in a hosted environment */
