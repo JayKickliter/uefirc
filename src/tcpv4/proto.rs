@@ -67,6 +67,7 @@ pub struct TCPv4Protocol {
 }
 
 impl TCPv4Protocol {
+    #[allow(dead_code)]
     pub fn reset_stack(&self) {
         // The UEFI specification states that configuring with NULL options "brutally resets" the TCP stack
         (self.configure_fn)(self, None)
@@ -100,6 +101,7 @@ impl TCPv4Protocol {
         ))
     }
 
+    #[allow(dead_code)]
     pub fn get_tcp_connection_state(&self) -> TCPv4ConnectionState {
         let mut connection_state = core::mem::MaybeUninit::<TCPv4ConnectionState>::uninit();
         let connection_state_ptr = connection_state.as_mut_ptr();
@@ -118,6 +120,7 @@ impl TCPv4Protocol {
         }
     }
 
+    #[allow(dead_code)]
     pub fn get_ipv4_mode_data(&self) -> IPv4ModeData {
         let mut mode_data = core::mem::MaybeUninit::<IPv4ModeData>::uninit();
         let mode_data_ptr = mode_data.as_mut_ptr();

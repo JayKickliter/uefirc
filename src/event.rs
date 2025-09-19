@@ -47,6 +47,7 @@ impl<'a> ManagedEvent<'a> {
         }
     }
 
+    #[allow(dead_code)]
     pub fn wait_for_events(bs: &BootServices, events: &[&Self]) -> usize {
         // Safety: The event clone is discarded after being passed to the UEFI function.
         unsafe {

@@ -1,5 +1,3 @@
-#![no_main]
-
 use crate::{
     app::IrcClient,
     fs::read_file,
@@ -44,6 +42,7 @@ struct RenderStructuredMessageAttributes<'a> {
     main_text: &'a str,
     main_text_color: Color,
     main_text_background_color: Color,
+    #[allow(dead_code)]
     main_text_background_border_color: Color,
 }
 
@@ -81,6 +80,7 @@ struct App<'a> {
     currently_held_key: RefCell<Option<KeyCode>>,
     current_pointer_pos: RefCell<Point>,
     cursor_size: Size,
+    #[allow(dead_code)]
     pointer_resolution: Point,
     is_left_click_down: RefCell<bool>,
     response_parser: RefCell<ResponseParser>,
@@ -138,19 +138,19 @@ impl<'a> App<'a> {
             )
         };
 
-        let title = TitleView::new(font_regular.clone(), Size::new(32, 32), move |v, s| {
+        let title = TitleView::new(font_regular.clone(), Size::new(32, 32), move |_v, s| {
             title_sizer(s)
         });
 
-        let content = ContentView::new(font_regular.clone(), Size::new(20, 20), move |v, s| {
+        let content = ContentView::new(font_regular.clone(), Size::new(20, 20), move |_v, s| {
             content_sizer(s)
         });
 
-        let input_box = InputBoxView::new(font_regular.clone(), Size::new(24, 24), move |v, s| {
+        let input_box = InputBoxView::new(font_regular.clone(), Size::new(24, 24), move |_v, s| {
             input_box_sizer(s)
         });
 
-        let send_button = Button::new("Send", Some(font_regular.clone()), move |v, s| {
+        let send_button = Button::new("Send", Some(font_regular.clone()), move |_v, s| {
             send_button_sizer(s)
         });
 
@@ -177,13 +177,13 @@ impl<'a> App<'a> {
 
         let self_clone_for_button_cb: Rc<App<'static>> =
             unsafe { core::mem::transmute(Rc::clone(&_self)) };
-        send_button.on_left_click(move |b| {
+        send_button.on_left_click(move |_b| {
             self_clone_for_button_cb.send_input_and_clear_input_text_box();
         });
 
         let self_clone_for_input_box_cb: Rc<App<'static>> =
             unsafe { core::mem::transmute(Rc::clone(&_self)) };
-        input_box.view.set_on_key_pressed(move |v, key_code| {
+        input_box.view.set_on_key_pressed(move |_v, key_code| {
             // PT: UEFI represents the enter key as a carriage return rather than newline
             if key_code.0 as u8 == '\r' as u8 {
                 Rc::clone(&self_clone_for_input_box_cb).handle_enter_key_pressed();
@@ -223,6 +223,7 @@ impl<'a> App<'a> {
             .set_scroll_offset(bound_scroll_offset);
     }
 
+    #[allow(dead_code)]
     fn scrollable_region_size(&self) -> Size {
         self.content_view.view.view.scrollable_region_size()
     }
@@ -247,11 +248,13 @@ impl<'a> App<'a> {
         scroll_offset.y >= cursor_pos.y - viewport_height + 30
     }
 
+    #[allow(dead_code)]
     fn write_string(&self, s: &str) {
         self.content_view.view.draw_string(s, Color::black());
         self.scroll_to_last_visible_line();
     }
 
+    #[allow(dead_code)]
     pub fn handle_recv_data(&self, recv_data: &[u8]) {
         let recv_as_str = core::str::from_utf8(recv_data).unwrap();
         self.write_string(recv_as_str);
@@ -571,11 +574,11 @@ impl<'a> App<'a> {
             IrcCommand::ReplyCreated(p) => {
                 self.render_structured_server_notice("Created", &p.message);
             }
-            IrcCommand::ReplyMyInfo(p) => {
+            IrcCommand::ReplyMyInfo(_p) => {
                 //self.render_structured_server_notice("Created", &p.message);
                 //self.write_string(&format!("MyInfo {}: {} {} {} {} {:?}", p.nick, p.version, p.server_name, p.available_user_modes, p.available_channel_modes, p.channel_modes_with_params));
             }
-            IrcCommand::ReplyISupport(p) => {
+            IrcCommand::ReplyISupport(_p) => {
                 //self.write_string(&format!("ISupport {}: {:?}", p.nick, p.entries));
             }
             IrcCommand::Unparseable(msg) => {
@@ -598,7 +601,7 @@ impl<'a> App<'a> {
             IrcCommand::Names(p) => {
                 self.render_names(&p.channel, &p.names);
             }
-            IrcCommand::EndOfNames(p) => {
+            IrcCommand::EndOfNames(_p) => {
                 // Nothing to display
             }
             IrcCommand::Topic(p) => {

@@ -2,16 +2,19 @@ use alloc::{vec, vec::Vec};
 use log::info;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[allow(dead_code)]
 enum TCPv4ConnectionOperation {
     Connecting,
     Transmitting,
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct TCPv4ConnectionLifecycleManager {
     pending_operations: Vec<TCPv4ConnectionOperation>,
 }
 
+#[allow(dead_code)]
 impl TCPv4ConnectionLifecycleManager {
     pub fn new() -> Self {
         Self {

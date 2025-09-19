@@ -97,6 +97,7 @@ impl TCPv4ClientConnectionModeParams {
 pub enum TCPv4ConnectionMode {
     Client(TCPv4ClientConnectionModeParams),
     // TODO(PT): There may be parameters we need to model when operating as a server
+    #[allow(dead_code)]
     Server,
 }
 
@@ -225,6 +226,7 @@ impl Drop for TCPv4FragmentData {
 
 #[derive(Debug)]
 #[repr(C)]
+#[allow(dead_code)]
 pub enum TCPv4ConnectionState {
     Closed = 0,
     Listen = 1,

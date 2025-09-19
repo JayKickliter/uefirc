@@ -28,8 +28,6 @@ extern crate alloc;
 #[cfg(feature = "run_in_uefi")]
 use uefi::prelude::*;
 #[cfg(feature = "run_in_uefi")]
-use uefi::Status;
-#[cfg(feature = "run_in_uefi")]
 mod main_uefi;
 
 #[cfg(feature = "run_in_uefi")]

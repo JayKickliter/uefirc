@@ -13,6 +13,7 @@ const IRC_LINE_DELIMITER: &'static str = "\r\n";
 pub struct Nickname(String);
 
 impl Nickname {
+    #[allow(dead_code)]
     fn new(nick: &str) -> Self {
         Self(nick.to_string())
     }
@@ -483,6 +484,7 @@ pub enum IrcCommand {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct IrcMessage {
     /// May be sent by the server, but not required
     pub origin: Option<String>,

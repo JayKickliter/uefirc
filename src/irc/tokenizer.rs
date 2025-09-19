@@ -68,6 +68,7 @@ impl Tokenizer {
     }
 
     /// Read the remainder of the buffer
+    #[allow(dead_code)]
     pub fn read(&mut self) -> Option<String> {
         if self.cursor == self.line.len() {
             return None;

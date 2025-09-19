@@ -58,6 +58,7 @@ impl InputBoxView {
         _self
     }
 
+    #[allow(dead_code)]
     pub fn add_component(self: Rc<Self>, elem: Rc<dyn UIElement>) {
         Rc::clone(&self.view).add_component(elem)
     }

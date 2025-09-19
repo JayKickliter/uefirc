@@ -131,7 +131,7 @@ impl<'a> TcpConnection<'a> {
                     .extend_from_slice(&received_data);
                 match str::from_utf8(&received_data) {
                     Ok(v) => {
-                        //info!("RX {v}");
+                        info!("RX {v}");
                     }
                     Err(_) => {
                         info!("RX (no decode) {0:?}", received_data);

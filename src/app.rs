@@ -52,15 +52,18 @@ impl<'a> IrcClient<'a> {
         self.send_line_command(&format!("NICK {nickname}"))
     }
 
+    #[allow(dead_code)]
     pub fn send_message_to_user(&mut self, user: &str, message: &str) {
         self.send_line_command(&format!("PRIVMSG {user} :{message}"))
     }
 
+    #[allow(dead_code)]
     pub fn send_message_to_channel(&mut self, channel: &str, message: &str) {
         // TODO(PT): Auto-join the channel if not already joined?
         self.send_line_command(&format!("PRIVMSG #{channel} :{message}"))
     }
 
+    #[allow(dead_code)]
     pub fn join_channel(&mut self, channel: &str) {
         // TODO(PT): Block if we've already joined this channel?
         self.send_line_command(&format!("JOIN #{channel}"))
