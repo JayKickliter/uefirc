@@ -91,6 +91,7 @@ where
 }
 
 unsafe fn cast_ctx<T>(raw_val: Option<NonNull<c_void>>) -> &'static mut T {
+    #[allow(clippy::unnecessary_cast)]
     let val_ptr = raw_val.unwrap().as_ptr() as *mut c_void as *mut T;
     &mut *val_ptr
 }

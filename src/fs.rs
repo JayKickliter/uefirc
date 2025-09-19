@@ -1,4 +1,4 @@
-use alloc::{format, vec::Vec};
+use alloc::vec::Vec;
 use uefi::{fs::FileSystem, prelude::BootServices, CString16};
 
 pub fn read_file(boot_services: &BootServices, path: &str) -> Vec<u8> {
@@ -9,5 +9,5 @@ pub fn read_file(boot_services: &BootServices, path: &str) -> Vec<u8> {
         .unwrap();
     let mut fs = FileSystem::new(sfs);
     fs.read(path_as_cstr16.as_ref())
-        .expect(&format!("Should be able to read file \"{path}\""))
+        .unwrap_or_else(|_| panic!("Should be able to read file \"{path}\""))
 }

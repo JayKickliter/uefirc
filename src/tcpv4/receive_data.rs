@@ -18,8 +18,8 @@ pub struct TCPv4ReceiveDataHandle<'a> {
 impl<'a> TCPv4ReceiveDataHandle<'a> {
     fn total_layout_size(fragment_count: usize) -> usize {
         let size_of_fragments = mem::size_of::<ManuallyDrop<TCPv4FragmentData>>() * fragment_count;
-        let ret = mem::size_of::<Self>() + size_of_fragments;
-        ret
+
+        mem::size_of::<Self>() + size_of_fragments
     }
 
     pub(crate) fn new() -> Self {

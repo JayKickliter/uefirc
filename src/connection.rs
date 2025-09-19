@@ -47,7 +47,7 @@ pub fn get_tcp_protocol<'a>(
     let mut tcp_handle = core::mem::MaybeUninit::<Handle>::uninit();
     let tcp_handle_ptr = tcp_handle.as_mut_ptr();
     let result = unsafe {
-        (tcp_service_binding_proto.create_child)(&tcp_service_binding_proto, &mut *tcp_handle_ptr)
+        (tcp_service_binding_proto.create_child)(tcp_service_binding_proto, &mut *tcp_handle_ptr)
     }
     .to_result();
     result.expect("Failed to create TCP child protocol");
@@ -67,17 +67,19 @@ pub fn get_tcp_protocol<'a>(
     tcp_proto
 }
 
+type ActiveRx<'a> = RefCell<
+    Option<(
+        Box<ManagedEvent<'a>>,
+        Box<TCPv4ReceiveDataHandle<'a>>,
+        &'a TCPv4ReceiveData,
+        Box<TCPv4IoToken<'a>>,
+    )>,
+>;
+
 pub struct TcpConnection<'a> {
     boot_services: &'static BootServices,
     tcp: SpinMutex<RefCell<ScopedProtocol<'a, TCPv4Protocol>>>,
-    active_rx: RefCell<
-        Option<(
-            Box<ManagedEvent<'a>>,
-            Box<TCPv4ReceiveDataHandle<'a>>,
-            &'a TCPv4ReceiveData,
-            Box<TCPv4IoToken<'a>>,
-        )>,
-    >,
+    active_rx: ActiveRx<'a>,
     pub recv_buffer: SpinMutex<RefCell<Vec<u8>>>,
 }
 
@@ -98,13 +100,12 @@ impl<'a> TcpConnection<'a> {
         .expect("Failed to configure the TCP connection");
         tcp.connect(boot_services);
 
-        let _self = Rc::new(Self {
+        Rc::new(Self {
             boot_services,
             tcp: SpinMutex::new(RefCell::new(tcp)),
             active_rx: RefCell::new(None),
             recv_buffer: SpinMutex::new(RefCell::new(vec![])),
-        });
-        _self
+        })
     }
 
     pub fn set_up_receive_signal_handler(self: Rc<Self>) {
@@ -177,7 +178,7 @@ impl<'a> TcpConnection<'a> {
         self.tcp
             .lock()
             .borrow_mut()
-            .transmit(&self.boot_services, data)
+            .transmit(self.boot_services, data)
     }
 }
 

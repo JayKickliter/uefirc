@@ -1,13 +1,12 @@
 use crate::irc::Tokenizer;
 use alloc::{
-    format,
     string::{String, ToString},
     vec,
     vec::Vec,
 };
 use core::fmt::{Display, Formatter};
 
-const IRC_LINE_DELIMITER: &'static str = "\r\n";
+const IRC_LINE_DELIMITER: &str = "\r\n";
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Nickname(String);
@@ -21,7 +20,7 @@ impl Nickname {
 
 impl Display for Nickname {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        f.write_str(&format!("{}", self.0))
+        f.write_str(&self.0.to_string())
     }
 }
 
@@ -557,7 +556,7 @@ impl ResponseParser {
 
     fn parse_usize(tokenizer: &mut Tokenizer) -> usize {
         let val_str = tokenizer.read_to(' ').expect("Failed to read a word");
-        usize::from_str_radix(&val_str, 10).expect("Failed to parse a usize")
+        val_str.parse::<usize>().expect("Failed to parse a usize")
     }
 
     pub fn parse_next_line(&mut self) -> Option<IrcMessage> {
@@ -619,7 +618,7 @@ impl ResponseParser {
                     &version,
                     &available_umodes,
                     &available_cmodes,
-                    cmodes_with_params.as_ref().map(String::as_str),
+                    cmodes_with_params.as_deref(),
                 ))
             }
             IrcCommandName::ReplyISupport => {
@@ -771,7 +770,7 @@ impl ResponseParser {
             )),
             IrcCommandName::Join => {
                 let channel = Self::parse_trailing_message(&mut tokenizer);
-                if channel.contains(" ") {
+                if channel.contains(' ') {
                     // Only clients can specify multiple channels
                     panic!(
                         "Multiple channels mentioned, servers should not send multiple channels?"
@@ -802,7 +801,7 @@ impl ResponseParser {
                     .read_to_str(IRC_LINE_DELIMITER)
                     .expect("Failed to read message");
                 let names = names_str
-                    .split(" ")
+                    .split(' ')
                     .collect::<Vec<&str>>()
                     .iter()
                     .map(|s| s.to_string())

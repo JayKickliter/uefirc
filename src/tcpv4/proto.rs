@@ -135,7 +135,7 @@ impl TCPv4Protocol {
     pub fn connect(&mut self, bs: &'static BootServices) {
         let event = ManagedEvent::new(bs, EventType::NOTIFY_WAIT, |_| {});
         let completion_token = TCPv4CompletionToken::new(&event);
-        (self.connect_fn)(&self, &completion_token)
+        (self.connect_fn)(self, &completion_token)
             .to_result()
             .expect("Failed to call Connect()");
         event.wait();
@@ -148,8 +148,8 @@ impl TCPv4Protocol {
 
         let tx_data_handle = TCPv4TransmitDataHandle::new(data);
         let tx_data = tx_data_handle.get_data_ref();
-        let io_token = TCPv4IoToken::new(&event, Some(&tx_data), None);
-        (self.transmit_fn)(&self, &io_token)
+        let io_token = TCPv4IoToken::new(&event, Some(tx_data), None);
+        (self.transmit_fn)(self, &io_token)
             .to_result()
             .expect("Failed to transmit");
         event.wait();

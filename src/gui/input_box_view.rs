@@ -32,10 +32,6 @@ impl InputBoxView {
             PixelByteLayout::BGRA,
         );
 
-        let _self = Rc::new(Self {
-            view: Rc::clone(&view),
-        });
-
         /*
         let prompt = Label::new_with_font(
             "Type: ",
@@ -55,7 +51,9 @@ impl InputBoxView {
         Rc::clone(&_self).add_component(Rc::clone(&prompt) as Rc<dyn UIElement>);
         */
 
-        _self
+        Rc::new(Self {
+            view: Rc::clone(&view),
+        })
     }
 
     #[allow(dead_code)]

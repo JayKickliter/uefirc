@@ -6,9 +6,7 @@ use crate::{
     irc::{IrcCommand, IrcMessage, ResponseParser},
     ui::set_resolution,
 };
-#[allow(dead_code)]
-use agx_definitions::Size;
-use agx_definitions::{Color, Drawable, NestedLayerSlice, Point, Rect, StrokeThickness};
+use agx_definitions::{Color, Drawable, NestedLayerSlice, Point, Rect, Size, StrokeThickness};
 use alloc::{
     format,
     rc::Rc,
@@ -47,6 +45,7 @@ struct RenderStructuredMessageAttributes<'a> {
 }
 
 impl<'a> RenderStructuredMessageAttributes<'a> {
+    #[allow(clippy::too_many_arguments)]
     fn new(
         leading_text: &'a str,
         leading_text_color: Color,
@@ -102,7 +101,7 @@ impl<'a> App<'a> {
             ))
         };
 
-        let title_sizer_clone = title_sizer.clone();
+        let title_sizer_clone = title_sizer;
         let content_sizer = move |superview_size: Size| {
             let title_frame = title_sizer_clone(superview_size);
             Rect::from_parts(
@@ -114,7 +113,7 @@ impl<'a> App<'a> {
             )
         };
 
-        let content_sizer_clone = content_sizer.clone();
+        let content_sizer_clone = content_sizer;
         let input_box_sizer = move |superview_size: Size| {
             let content_frame = content_sizer_clone(superview_size);
             Rect::from_parts(
@@ -126,7 +125,7 @@ impl<'a> App<'a> {
             )
         };
 
-        let input_box_sizer_clone = input_box_sizer.clone();
+        let input_box_sizer_clone = input_box_sizer;
         let send_button_sizer = move |superview_size: Size| {
             let input_box_frame = input_box_sizer_clone(superview_size);
             Rect::from_parts(
@@ -185,7 +184,7 @@ impl<'a> App<'a> {
             unsafe { core::mem::transmute(Rc::clone(&_self)) };
         input_box.view.set_on_key_pressed(move |_v, key_code| {
             // PT: UEFI represents the enter key as a carriage return rather than newline
-            if key_code.0 as u8 == '\r' as u8 {
+            if key_code.0 as u8 == b'\r' {
                 Rc::clone(&self_clone_for_input_box_cb).handle_enter_key_pressed();
             }
         });
@@ -689,10 +688,10 @@ impl<'a> App<'a> {
 
         let currently_held_key = *self.currently_held_key.borrow();
         // Are we switching away from a held key?
-        if currently_held_key.is_some() {
-            self.window.handle_key_released(currently_held_key.unwrap());
+        if let Some(key) = currently_held_key {
+            self.window.handle_key_released(key);
         }
-        if key_held_on_this_iteration.is_some() {
+        if let Some(key) = key_held_on_this_iteration {
             // Hack to support scrolling the main content view up and down.
             // Directly eat arrow key inputs, instead of forwarding them to libgui.
             // UEFI key map for arrow keys:
@@ -700,14 +699,13 @@ impl<'a> App<'a> {
             // Down: 2
             // Right: 3
             // Left: 4
-            if key_held_on_this_iteration.unwrap() == KeyCode(1) {
+            if key == KeyCode(1) {
                 self.scroll_up();
-            } else if key_held_on_this_iteration.unwrap() == KeyCode(2) {
+            } else if key == KeyCode(2) {
                 self.scroll_down();
             } else {
                 // Inform the window that a new key is held
-                self.window
-                    .handle_key_pressed(key_held_on_this_iteration.unwrap());
+                self.window.handle_key_pressed(key);
                 // And update our state to track that this key is currently held
                 self.currently_held_key.replace(key_held_on_this_iteration);
             }
@@ -870,20 +868,19 @@ fn parse_config_file(boot_services: &BootServices) -> (IPv4Address, u16, String,
                 server_ip = Some(IPv4Address::new(octets[0], octets[1], octets[2], octets[3]));
             }
             "server_port" => {
-                server_port =
-                    Some(u16::from_str_radix(suffix, 10).expect("Failed to parse a port"));
+                server_port = Some(suffix.parse::<u16>().expect("Failed to parse a port"));
             }
             "nickname" => nickname = Some(suffix.to_string()),
             "real_name" => real_name = Some(suffix.to_string()),
             _ => panic!("Unrecognized config key {prefix}"),
         }
     }
-    return (
+    (
         server_ip.expect("No server IP address specified"),
         server_port.expect("No server IP address specified"),
         nickname.expect("No server IP address specified"),
         real_name.expect("No server IP address specified"),
-    );
+    )
 }
 
 pub fn main(_image_handle: Handle, mut system_table: SystemTable<Boot>) -> Status {
@@ -911,7 +908,7 @@ pub fn main(_image_handle: Handle, mut system_table: SystemTable<Boot>) -> Statu
     {
         let conn = irc_client.active_connection.as_mut();
         let conn = conn.unwrap();
-        Rc::clone(&conn).set_up_receive_signal_handler();
+        Rc::clone(conn).set_up_receive_signal_handler();
     }
 
     let pointer_handle = bs
